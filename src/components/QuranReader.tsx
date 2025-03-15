@@ -2,7 +2,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
-import { fetchQuranData, fetchSurahs } from "@/utils/quranData";
+import { fetchQuranData, fetchSurah, Verse, Surah } from "@/utils/quranData";
 import { useProgress } from "@/hooks/useProgress";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -16,9 +16,10 @@ export default function QuranReader({ className }: QuranReaderProps) {
   const { toast } = useToast();
   const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
   const [currentVerseNumber, setCurrentVerseNumber] = useState(128); // Default to the sample verse
-  const [surahData, setSurahData] = useState(null);
-  const [verseData, setVerseData] = useState(null);
+  const [surahData, setSurahData] = useState<Surah | null>(null);
+  const [verseData, setVerseData] = useState<Verse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [pointsEarned, setPointsEarned] = useState(7600);
   
   // Load verse data when component mounts or when current verse changes
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function QuranReader({ className }: QuranReaderProps) {
         const { surah, verse } = await fetchQuranData(currentSurah, currentVerseNumber);
         setSurahData(surah);
         setVerseData(verse);
+        setPointsEarned(Math.floor(Math.random() * 5000) + 5000); // Random points for demo
       } catch (error) {
         console.error("Failed to load verse data:", error);
         toast({
@@ -65,7 +67,7 @@ export default function QuranReader({ className }: QuranReaderProps) {
   };
   
   const goToPrevVerse = () => {
-    if (isLoading || currentVerseNumber <= 1 && currentSurah <= 1) return;
+    if (isLoading || (currentVerseNumber <= 1 && currentSurah <= 1)) return;
     
     if (currentVerseNumber > 1) {
       // Go to previous verse in the same surah
@@ -77,6 +79,14 @@ export default function QuranReader({ className }: QuranReaderProps) {
         setCurrentVerseNumber(prevSurah.numberOfAyahs);
       });
     }
+  };
+
+  const handleDone = () => {
+    markVerseAsRead(currentSurah, currentVerseNumber);
+    toast({
+      title: "Great job!",
+      description: `You've earned ${pointsEarned} points for this verse.`,
+    });
   };
   
   if (isLoading && !verseData) {
@@ -114,7 +124,7 @@ export default function QuranReader({ className }: QuranReaderProps) {
         </button>
         
         <button 
-          onClick={() => {}}
+          onClick={handleDone}
           className="h-14 w-32 rounded-full flex items-center justify-center bg-app-green text-app-background-dark font-medium hover:bg-app-green-light transition-all duration-300 active:scale-95"
         >
           I'm Done
@@ -134,7 +144,7 @@ export default function QuranReader({ className }: QuranReaderProps) {
       </div>
       
       <div className="text-center text-sm text-app-text-secondary">
-        <div className="font-medium text-app-green">+7600</div>
+        <div className="font-medium text-app-green">+{pointsEarned}</div>
         <p>Points earned for this verse</p>
       </div>
     </div>

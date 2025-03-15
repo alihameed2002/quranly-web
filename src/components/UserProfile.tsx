@@ -79,7 +79,7 @@ export default function UserProfile({
           
           return (
             <div 
-              key={day} 
+              key={`day-${i}`} 
               className={cn(
                 "h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300",
                 isToday ? "bg-app-purple text-white" : "glass-card",

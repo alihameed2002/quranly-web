@@ -2,6 +2,8 @@
 import { Share, Bookmark, Heart, Volume2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { useRecitation } from "@/hooks/useRecitation";
+import { useToast } from "@/hooks/use-toast";
 
 interface VerseCardProps {
   surahName: string;
@@ -27,15 +29,49 @@ export default function VerseCard({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const formattedLikes = likes / 1000;
+  const { toast } = useToast();
+  const { isPlaying, togglePlay } = useRecitation({ 
+    surahId: surahNumber, 
+    verseId: verseNumber 
+  });
 
-  const toggleBookmark = () => setIsBookmarked(!isBookmarked);
-  const toggleLike = () => setIsLiked(!isLiked);
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+    toast({
+      title: isBookmarked ? "Bookmark removed" : "Bookmark added",
+      description: `${surahName} (${surahNumber}:${verseNumber})`,
+    });
+  };
+  
+  const toggleLike = () => {
+    setIsLiked(!isLiked);
+    toast({
+      description: isLiked ? "Removed from favorites" : "Added to favorites",
+    });
+  };
+
+  const handleShare = () => {
+    // In a real app, this would use the Web Share API
+    toast({
+      title: "Sharing verse",
+      description: `${surahName} (${surahNumber}:${verseNumber})`,
+    });
+  };
 
   return (
     <div className={cn("w-full space-y-4 animate-fade-in", className)}>
       <div className="flex items-center gap-3 px-6">
-        <button className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300">
-          <Volume2 className="h-5 w-5 text-white" />
+        <button 
+          className={cn(
+            "h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300",
+            isPlaying ? "bg-app-green/20" : ""
+          )}
+          onClick={togglePlay}
+        >
+          <Volume2 className={cn(
+            "h-5 w-5",
+            isPlaying ? "text-app-green" : "text-white"
+          )} />
         </button>
         
         <div className="flex-1 text-center">
@@ -83,7 +119,10 @@ export default function VerseCard({
           {arabicText}
         </div>
         
-        <button className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300 mx-auto">
+        <button 
+          onClick={handleShare}
+          className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300 mx-auto"
+        >
           <Share className="h-5 w-5 text-white" />
         </button>
       </div>

@@ -2,7 +2,8 @@
 import { Volume2, Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRecitation } from "@/hooks/useRecitation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface AudioPlayerProps {
   surahId?: number;
@@ -17,6 +18,7 @@ export default function AudioPlayer({
   className,
   minimized = false
 }: AudioPlayerProps) {
+  const { toast } = useToast();
   const { 
     isPlaying, 
     isLoading, 
@@ -38,6 +40,22 @@ export default function AudioPlayer({
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(parseInt(e.target.value));
   };
+
+  const handlePrevVerse = () => {
+    if (verseId > 1) {
+      toast({
+        title: "Previous verse",
+        description: `Playing verse ${verseId - 1} of Surah ${surahId}`,
+      });
+    }
+  };
+
+  const handleNextVerse = () => {
+    toast({
+      title: "Next verse",
+      description: `Playing verse ${verseId + 1} of Surah ${surahId}`,
+    });
+  };
   
   if (minimized) {
     return (
@@ -46,7 +64,7 @@ export default function AudioPlayer({
           <Volume2 className="h-5 w-5 text-white" />
           <div>
             <p className="text-sm text-white">Currently playing</p>
-            <p className="text-xs text-app-text-secondary">Surah Al-Araf - Verse 128</p>
+            <p className="text-xs text-app-text-secondary">Surah Al-Araf - Verse {verseId}</p>
           </div>
         </div>
         <button 
@@ -91,7 +109,10 @@ export default function AudioPlayer({
       </div>
       
       <div className="flex items-center justify-center space-x-6">
-        <button className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300">
+        <button 
+          onClick={handlePrevVerse}
+          className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300"
+        >
           <SkipBack className="h-5 w-5 text-white" />
         </button>
         
@@ -108,7 +129,10 @@ export default function AudioPlayer({
           )}
         </button>
         
-        <button className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300">
+        <button 
+          onClick={handleNextVerse}
+          className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300"
+        >
           <SkipForward className="h-5 w-5 text-white" />
         </button>
       </div>

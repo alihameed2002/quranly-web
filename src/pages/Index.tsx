@@ -8,10 +8,12 @@ import AudioPlayer from "@/components/AudioPlayer";
 import Navigation from "@/components/Navigation";
 import { useProgress } from "@/hooks/useProgress";
 import { Users, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { progress } = useProgress();
+  const { progress, getTimeSpentFormatted } = useProgress();
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Simulate loading data
@@ -33,12 +35,15 @@ const Index = () => {
     );
   }
   
+  // Format timeSpent for Header component
+  const formattedTimeSpent = getTimeSpentFormatted();
+  
   return (
     <div className="min-h-screen bg-app-background pb-20">
       <Header
         totalPoints={progress.points / 1000}
         totalVerses={progress.totalVerses}
-        timeSpent={progress.timeSpent} // Fixed: Changed from getTimeSpentFormatted to timeSpent
+        timeSpent={formattedTimeSpent}
         showBack={false}
       />
       
@@ -80,7 +85,10 @@ const Index = () => {
         </div>
         
         <div className="w-full flex overflow-x-auto hide-scrollbar px-6 space-x-4 pb-2">
-          <div className="flex-none w-32 h-32 glass-card rounded-xl p-4 flex flex-col items-center justify-center space-y-3 hover:bg-white/5 transition-all duration-300">
+          <div 
+            className="flex-none w-32 h-32 glass-card rounded-xl p-4 flex flex-col items-center justify-center space-y-3 hover:bg-white/5 transition-all duration-300 cursor-pointer"
+            onClick={() => navigate('/reading')}
+          >
             <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center">
               <BookOpen className="h-6 w-6 text-white" />
             </div>
@@ -149,7 +157,10 @@ const Index = () => {
               </div>
             </div>
             
-            <button className="w-full py-3 rounded-lg glass-card text-white font-medium hover:bg-white/10 transition-all duration-300">
+            <button 
+              onClick={() => navigate('/reading')}
+              className="w-full py-3 rounded-lg glass-card text-white font-medium hover:bg-white/10 transition-all duration-300"
+            >
               Continue Reading
             </button>
             
