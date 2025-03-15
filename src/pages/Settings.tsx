@@ -8,6 +8,18 @@ import LoginButton from "@/components/LoginButton";
 const Settings = () => {
   const { user } = useAuth();
 
+  // Helper to safely get user display name
+  const getUserDisplayName = () => {
+    if (!user) return "User";
+    return user.user_metadata?.name || user.email?.split('@')[0] || "User";
+  };
+
+  // Helper to safely get user avatar
+  const getUserAvatar = () => {
+    if (!user) return null;
+    return user.user_metadata?.avatar_url || null;
+  };
+
   return (
     <div className="min-h-screen bg-app-background pb-20">
       <Header showBack={false} />
@@ -35,19 +47,19 @@ const Settings = () => {
             {user ? (
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
-                  {user.photoURL ? (
+                  {getUserAvatar() ? (
                     <img 
-                      src={user.photoURL} 
-                      alt={user.displayName || "User"} 
+                      src={getUserAvatar()} 
+                      alt={getUserDisplayName()} 
                       className="h-12 w-12 rounded-full"
                     />
                   ) : (
                     <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 font-medium">
-                      {user.displayName ? user.displayName.charAt(0).toUpperCase() : "U"}
+                      {getUserDisplayName().charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div>
-                    <h4 className="text-white font-medium">{user.displayName || "User"}</h4>
+                    <h4 className="text-white font-medium">{getUserDisplayName()}</h4>
                     <p className="text-app-text-secondary text-sm">{user.email}</p>
                   </div>
                 </div>

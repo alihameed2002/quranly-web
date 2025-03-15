@@ -1,8 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://your-supabase-project-url.supabase.co';
-const supabaseAnonKey = 'your-supabase-anon-key';
+// Update to use environment variables or default values that won't break the app
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fake-url-for-testing.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'fake-key-for-testing';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
