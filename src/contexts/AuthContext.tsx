@@ -1,8 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from 'firebase/auth';
-import { onAuthStateChange, signInWithGoogle, signOut, UserProgress, getUserProgress, saveUserProgress } from '@/utils/firebase';
-import { useToast } from '@/hooks/use-toast';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase, UserProgress, getUserProgress, saveUserProgress } from '@/utils/supabase';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -20,43 +19,73 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
-  const { toast: uiToast } = useToast();
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChange(async (authUser) => {
-      setUser(authUser);
+    // Set up session listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user || null);
+        setLoading(false);
+
+        if (session?.user) {
+          // Fetch user progress when user is authenticated
+          try {
+            const progress = await getUserProgress(session.user.id);
+            if (progress) {
+              setUserProgress(progress);
+            }
+          } catch (error) {
+            console.error("Error fetching user progress:", error);
+          }
+        } else {
+          setUserProgress(null);
+        }
+      }
+    );
+
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user || null);
+      setLoading(false);
       
-      if (authUser) {
-        // Fetch user progress
-        try {
-          const progress = await getUserProgress(authUser.uid);
+      if (session?.user) {
+        getUserProgress(session.user.id).then(progress => {
           if (progress) {
             setUserProgress(progress);
           }
-        } catch (error) {
-          console.error("Error fetching user progress:", error);
-        }
-      } else {
-        setUserProgress(null);
+        }).catch(error => {
+          console.error("Error fetching initial user progress:", error);
+        });
       }
-      
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async () => {
     try {
       setLoading(true);
-      await signInWithGoogle();
-      toast("Welcome!", {
-        description: "You've successfully signed in."
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin + '/settings'
+        }
       });
-    } catch (error) {
+      
+      if (error) throw error;
+      
+      toast("Redirecting to Google...", {
+        description: "You'll be redirected to sign in with Google."
+      });
+    } catch (error: any) {
       console.error("Error signing in:", error);
       toast("Error signing in", {
-        description: "Please try again later."
+        description: error.message || "Please try again later."
       });
     } finally {
       setLoading(false);
@@ -66,14 +95,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      await signOut();
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) throw error;
+      
+      setUser(null);
+      setUserProgress(null);
       toast("Signed out", {
         description: "You've been successfully signed out."
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error signing out:", error);
       toast("Error signing out", {
-        description: "Please try again later."
+        description: error.message || "Please try again later."
       });
     } finally {
       setLoading(false);
@@ -84,9 +118,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     
     try {
-      await saveUserProgress(user.uid, progress);
+      await saveUserProgress(user.id, progress);
       setUserProgress(progress);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating progress:", error);
       toast("Error saving progress", {
         description: "Your reading progress couldn't be saved."

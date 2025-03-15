@@ -18,14 +18,8 @@ export default function LoginButton({ variant = 'default', className }: LoginBut
     } catch (error: any) {
       console.error("Error signing in:", error);
       
-      // Provide a more specific error message based on the Firebase error code
-      const errorMessage = error?.code === 'auth/api-key-not-valid.-please-pass-a-valid-api-key.' 
-        ? "Authentication service is not properly configured. Please try again later."
-        : error?.code === 'auth/popup-closed-by-user'
-        ? "Sign-in was cancelled. Please try again."
-        : "Could not sign in. Please try again later.";
-      
-      toast.error(errorMessage);
+      // Provide a friendly error message
+      toast.error("Could not sign in. Please try again later.");
     }
   };
 

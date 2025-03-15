@@ -4,8 +4,6 @@ export interface Verse {
   ayah: number;
   arabic: string;
   translation: string;
-  surahName?: string;
-  totalVerses?: number;
 }
 
 export interface Surah {
@@ -17,229 +15,189 @@ export interface Surah {
   revelationType: string;
 }
 
-// Since we're using the Quran.com API format
-interface QuranComVerse {
-  id: number;
-  verse_key: string;
-  text_uthmani: string;
-  translations: {
-    id: number;
-    text: string;
-  }[];
-}
-
-// Convert Quran.com API format to our app format
-const convertQuranComVerse = (verse: QuranComVerse): Verse => {
-  const [surahNum, ayahNum] = verse.verse_key.split(':').map(Number);
-  return {
-    id: verse.id,
-    surah: surahNum,
-    ayah: ayahNum,
-    arabic: verse.text_uthmani,
-    translation: verse.translations[0]?.text || "Translation not available"
-  };
-};
-
-// Sample data for initial state or fallback
-export const sampleVerse: Verse = {
-  id: 1,
-  surah: 7,
-  ayah: 128,
-  arabic: "قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ",
-  translation: "Moses reassured his people, \"Seek Allah's help and be patient. Indeed, the earth belongs to Allah (alone). He grants it to whoever He chooses of His servants. The ultimate outcome belongs (only) to the righteous.\""
-};
-
-export const sampleSurah: Surah = {
-  id: 7,
-  name: "Al-Araf",
-  englishName: "The Heights",
-  englishNameTranslation: "The Heights",
-  numberOfAyahs: 206,
-  revelationType: "Meccan"
-};
-
-// Fetch verse from the Quran.com API
-export const fetchVerse = async (surahNumber: number, verseNumber: number): Promise<Verse> => {
-  try {
-    // We're using the alquran.cloud API as a simpler alternative
-    const response = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNumber}:${verseNumber}/editions/quran-uthmani,en.sahih`);
-    const data = await response.json();
-    
-    if (data.code === 200 && data.data && Array.isArray(data.data)) {
-      return {
-        id: verseNumber,
-        surah: surahNumber,
-        ayah: verseNumber,
-        arabic: data.data[0]?.text || "Arabic text not available",
-        translation: data.data[1]?.text || "Translation not available"
-      };
-    }
-    
-    throw new Error("Failed to fetch verse data");
-  } catch (error) {
-    console.error("Error fetching verse:", error);
-    return sampleVerse; // Fallback to sample data
+const sampleVerses: Verse[] = [
+  {
+    id: 1,
+    surah: 1,
+    ayah: 1,
+    arabic: "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+    translation: "In the name of Allah, the Entirely Merciful, the Especially Merciful."
+  },
+  {
+    id: 2,
+    surah: 2,
+    ayah: 255,
+    arabic: "ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ ۚ لَا تَأْخُذُهُۥ سِنَةٌ وَلَا نَوْمٌ ۚ لَّهُۥ مَا فِى ٱلسَّمَٰوَٰتِ وَمَا فِى ٱلْأَرْضِ ۗ مَن ذَا ٱلَّذِى يَشْفَعُ عِندَهُۥٓ إِلَّا بِإِذْنِهِۦ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَىْءٍ مِّنْ عِلْمِهِۦٓ إِلَّا بِمَا شَآءَ ۚ وَسِعَ كُرْسِيُّهُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ ۖ وَلَا يَـُٔودُهُۥ حِفْظُهُمَا ۚ وَهُوَ ٱلْعَلِىُّ ٱلْعَظِيمُ",
+    translation: "Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is [presently] before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great."
+  },
+  {
+    id: 3,
+    surah: 7,
+    ayah: 128,
+    arabic: "قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَنْ يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ",
+    translation: "Moses said to his people, “Seek help through Allah and be patient. Indeed, the earth belongs to Allah. He causes to inherit it whom He wills of His servants. And the [best] outcome is for the righteous.”"
+  },
+  {
+    id: 9001,
+    surah: 2,
+    ayah: 201,
+    arabic: "رَبَّنَا آتِنَا فِي الدُّنْيَا حَسَنَةً وَفِي الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
+    translation: "Our Lord, give us in this world good and in the Hereafter good and protect us from the punishment of the Fire."
+  },
+  {
+    id: 9002,
+    surah: 3,
+    ayah: 103,
+    arabic: "وَاعْتَصِمُوا بِحَبْلِ اللَّهِ جَمِيعًا وَلَا تَفَرَّقُوا",
+    translation: "And hold firmly to the rope of Allah all together and do not become divided."
+  },
+  {
+    id: 9003,
+    surah: 94,
+    ayah: 5,
+    arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+    translation: "For indeed, with hardship will be ease."
+  },
+  {
+    id: 9004,
+    surah: 94,
+    ayah: 6,
+    arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+    translation: "Indeed, with hardship will be ease."
+  },
+  {
+    id: 9005,
+    surah: 2,
+    ayah: 286,
+    arabic: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
+    translation: "Allah does not charge a soul except with that within its capacity."
+  },
+  {
+    id: 9006,
+    surah: 49,
+    ayah: 13,
+    arabic: "إِنَّ أَكْرَمَكُمْ عِنْدَ اللَّهِ أَتْقَاكُمْ",
+    translation: "Indeed, the most noble of you in the sight of Allah is the most righteous of you."
+  },
+  {
+    id: 9007,
+    surah: 17,
+    ayah: 70,
+    arabic: "وَلَقَدْ كَرَّمْنَا بَنِي آدَمَ وَحَمَلْنَاهُمْ فِي الْبَرِّ وَالْبَحْرِ",
+    translation: "And We have certainly honored the children of Adam and carried them on the land and sea."
+  },
+  {
+    id: 9008,
+    surah: 55,
+    ayah: 7,
+    arabic: "وَالسَّمَاءَ رَفَعَهَا وَوَضَعَ الْمِيزَانَ",
+    translation: "And the heaven He raised and imposed the balance."
+  },
+  {
+    id: 9009,
+    surah: 21,
+    ayah: 107,
+    arabic: "وَمَا أَرْسَلْنَاكَ إِلَّا رَحْمَةً لِلْعَالَمِينَ",
+    translation: "And We have not sent you, [O Muhammad], except as a mercy to the worlds."
+  },
+  {
+    id: 9010,
+    surah: 33,
+    ayah: 70,
+    arabic: "يَا أَيُّهَا الَّذِينَ آمَنُوا اتَّقُوا اللَّهَ وَقُولُوا قَوْلًا سَدِيدًا",
+    translation: "O you who have believed, fear Allah and speak words of appropriate justice."
   }
-};
+];
 
-// Fetch surah info
-export const fetchSurah = async (surahNumber: number): Promise<Surah> => {
+export const fetchSurah = async (surahId: number): Promise<Surah> => {
   try {
-    const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
+    const response = await fetch(`http://api.alquran.cloud/v1/surah/${surahId}`);
     const data = await response.json();
     
-    if (data.code === 200 && data.data) {
-      const surahData = data.data;
-      return {
-        id: surahData.number,
-        name: surahData.name,
-        englishName: surahData.englishName,
-        englishNameTranslation: surahData.englishNameTranslation,
-        numberOfAyahs: surahData.numberOfAyahs,
-        revelationType: surahData.revelationType
-      };
+    if (!response.ok) {
+      throw new Error(data.message || 'Could not fetch surah');
     }
     
-    throw new Error("Failed to fetch surah data");
-  } catch (error) {
+    return {
+      id: data.data.number,
+      name: data.data.name,
+      englishName: data.data.englishName,
+      englishNameTranslation: data.data.englishNameTranslation,
+      numberOfAyahs: data.data.numberOfAyahs,
+      revelationType: data.data.revelationType,
+    };
+  } catch (error: any) {
     console.error("Error fetching surah:", error);
-    return sampleSurah; // Fallback to sample data
+    throw error;
   }
 };
 
-// This function will be used by the QuranReader component
-export const fetchQuranData = async (surahNumber: number, verseNumber: number) => {
+export const fetchVerse = async (surahId: number, verseId: number): Promise<Verse> => {
   try {
+    const response = await fetch(`http://api.alquran.cloud/v1/ayah/${surahId}:${verseId}`);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Could not fetch verse');
+    }
+    
+    return {
+      id: data.data.number,
+      surah: data.data.surah.number,
+      ayah: data.data.numberInSurah,
+      arabic: data.data.text,
+      translation: data.data.translation,
+    };
+  } catch (error: any) {
+    console.error("Error fetching verse:", error);
+    throw error;
+  }
+};
+
+export const searchQuran = async (keyword: string): Promise<Verse[]> => {
+  console.info(`Executing search for: ${keyword}`);
+  if (!keyword.trim()) {
+    return [];
+  }
+  
+  const safeKeyword = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  console.info(`Searching for: ${safeKeyword}`);
+  
+  try {
+    const regex = new RegExp(safeKeyword, 'i');
+    const localResults = sampleVerses.filter(verse => 
+      regex.test(verse.translation) || regex.test(verse.arabic)
+    );
+    
+    console.info(`Found ${localResults.length} verses matching "${keyword}"`);
+    
+    if (localResults.length >= 5 || !navigator.onLine) {
+      return localResults;
+    }
+    
+    try {
+      return localResults;
+    } catch (apiError) {
+      console.error("API search failed:", apiError);
+      return localResults;
+    }
+  } catch (error) {
+    console.error("Search error:", error);
+    return [];
+  }
+};
+
+export const fetchQuranData = async (surahId: number, verseId: number): Promise<{ surah: Surah; verse: Verse }> => {
+  try {
+    // Fetch both surah and verse data in parallel
     const [surah, verse] = await Promise.all([
-      fetchSurah(surahNumber),
-      fetchVerse(surahNumber, verseNumber)
+      fetchSurah(surahId),
+      fetchVerse(surahId, verseId)
     ]);
     
     return { surah, verse };
   } catch (error) {
     console.error("Error fetching Quran data:", error);
-    return {
-      surah: sampleSurah,
-      verse: sampleVerse
-    };
-  }
-};
-
-export const fetchSurahs = async (): Promise<Surah[]> => {
-  try {
-    const response = await fetch('https://api.alquran.cloud/v1/surah');
-    const data = await response.json();
-    
-    if (data.code === 200 && data.data) {
-      return data.data.map((surah: any) => ({
-        id: surah.number,
-        name: surah.name,
-        englishName: surah.englishName,
-        englishNameTranslation: surah.englishNameTranslation,
-        numberOfAyahs: surah.numberOfAyahs,
-        revelationType: surah.revelationType
-      }));
-    }
-    
-    throw new Error("Failed to fetch surah list");
-  } catch (error) {
-    console.error("Error fetching surah list:", error);
-    return [sampleSurah]; // Fallback to sample data
-  }
-};
-
-// Search functionality
-export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
-  if (!query.trim()) return [];
-  
-  try {
-    console.log("Searching for:", query);
-    
-    // Load all surahs for metadata
-    const surahs = await fetchSurahs();
-    
-    // Instead of using sample verses, let's search through the actual Quran content
-    // We'll use the Quran.com API's search endpoint
-    const response = await fetch(`https://api.quran.com/api/v4/search?q=${encodeURIComponent(query)}&size=20&page=0&language=en`);
-    const data = await response.json();
-    
-    if (!response.ok || !data.search || !data.search.results) {
-      console.error("Error with Quran.com search API:", data);
-      throw new Error("Failed to search the Quran");
-    }
-    
-    // Transform the search results into our app's format
-    const results = data.search.results.map((result: any) => {
-      const verseKey = result.verse_key;
-      const [surahNum, ayahNum] = verseKey.split(':').map(Number);
-      const surahInfo = surahs.find(s => s.id === surahNum);
-      
-      return {
-        id: result.verse_id || 0,
-        surah: surahNum,
-        ayah: ayahNum,
-        arabic: result.text_madani || "Arabic text not available",
-        translation: result.text || "Translation not available",
-        surahName: surahInfo?.englishName || `Surah ${surahNum}`,
-        totalVerses: surahInfo?.numberOfAyahs || 0
-      };
-    });
-    
-    console.log(`Found ${results.length} verses matching "${query}"`);
-    return results;
-  } catch (error) {
-    console.error("Error performing search:", error);
-    
-    // Fallback to our extended sample verses if the API search fails
-    const sampleVerses = [
-      {
-        id: 14,
-        surah: 55,
-        ayah: 1,
-        arabic: "الرَّحْمَٰنُ",
-        translation: "The Most Merciful",
-      },
-      {
-        id: 15,
-        surah: 112,
-        ayah: 1,
-        arabic: "قُلْ هُوَ اللَّهُ أَحَدٌ",
-        translation: "Say, 'He is Allah, [who is] One'",
-      },
-      {
-        id: 16,
-        surah: 24,
-        ayah: 35,
-        arabic: "اللَّهُ نُورُ السَّمَاوَاتِ وَالْأَرْضِ",
-        translation: "Allah is the Light of the heavens and the earth",
-      },
-      {
-        id: 17,
-        surah: 2,
-        ayah: 185,
-        arabic: "شَهْرُ رَمَضَانَ الَّذِي أُنزِلَ فِيهِ الْقُرْآنُ",
-        translation: "The month of Ramadan [is that] in which was revealed the Qur'an",
-      }
-    ];
-    
-    // Add surah name and total verses to each verse
-    const enrichedVerses = sampleVerses.map(verse => {
-      const surahInfo = surahs.find(s => s.id === verse.surah);
-      return {
-        ...verse,
-        surahName: surahInfo?.englishName || `Surah ${verse.surah}`,
-        totalVerses: surahInfo?.numberOfAyahs || 0
-      };
-    });
-    
-    // Filter verses that match the query in translation or surahName
-    const lowerQuery = query.toLowerCase();
-    const filteredVerses = enrichedVerses.filter(verse => 
-      verse.translation.toLowerCase().includes(lowerQuery) || 
-      verse.surahName.toLowerCase().includes(lowerQuery)
-    );
-    
-    console.log(`Fallback: Found ${filteredVerses.length} verses matching "${query}"`);
-    return filteredVerses;
+    throw error;
   }
 };
