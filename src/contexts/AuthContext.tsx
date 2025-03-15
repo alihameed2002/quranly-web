@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { 
   supabase, 
   UserProgress, 
@@ -18,6 +18,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   userProgress: UserProgress | null;
   updateUserProgress: (progress: UserProgress) => Promise<void>;
+  authError: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,24 +27,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Check for Supabase credentials
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase credentials missing:', { supabaseUrl, supabaseKey });
+      setAuthError('Supabase credentials are missing. Authentication will not work.');
+    }
+
     // Check if there's an active session
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
+          console.error("Session error:", error);
           throw error;
         }
         
         setUser(session?.user || null);
         
         if (session?.user) {
-          const progress = await getUserProgress(session.user.id);
-          setUserProgress(progress);
+          try {
+            const progress = await getUserProgress(session.user.id);
+            setUserProgress(progress);
+          } catch (progressError) {
+            console.error("Error fetching user progress:", progressError);
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error retrieving session:", error);
+        setAuthError(error.message || 'Failed to get authentication session');
       } finally {
         setLoading(false);
       }
@@ -54,6 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setUser(session?.user || null);
         
         if (session?.user) {
@@ -78,14 +97,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signIn = async () => {
+    // Verify Supabase credentials exist
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      const errorMsg = 'Supabase credentials are missing. Authentication will not work.';
+      setAuthError(errorMsg);
+      toast.error("Authentication Error", { description: errorMsg });
+      throw new Error(errorMsg);
+    }
+    
     try {
       setLoading(true);
       await signInWithGoogle();
     } catch (error: any) {
       console.error("Error signing in:", error);
       toast.error("Sign in failed", {
-        description: error.message || "Please try again later"
+        description: error.message || "Please check your Supabase configuration."
       });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -97,12 +128,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       await signOut();
       setUser(null);
       setUserProgress(null);
-      toast.success("Signed out successfully");
     } catch (error: any) {
       console.error("Error signing out:", error);
       toast.error("Sign out failed", {
-        description: error.message || "Please try again later"
+        description: error.message || "Please try again later."
       });
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -130,7 +161,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signIn, 
         logout, 
         userProgress, 
-        updateUserProgress 
+        updateUserProgress,
+        authError
       }}
     >
       {children}

@@ -1,11 +1,20 @@
-
 import { createClient } from '@supabase/supabase-js';
+import { toast } from 'sonner';
 
-// Update to use environment variables or default values that won't break the app
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fake-url-for-testing.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'fake-key-for-testing';
+// Get environment variables with proper error handling
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Check if credentials exist and log error but don't crash
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Supabase credentials missing! Authentication will not work.');
+}
+
+// Create the Supabase client - we'll handle missing credentials in the auth functions
+export const supabase = createClient(
+  supabaseUrl || '', 
+  supabaseAnonKey || ''
+);
 
 // User progress interface
 export interface UserProgress {
@@ -53,9 +62,14 @@ export const getUserProgress = async (userId: string): Promise<UserProgress | nu
   }
 };
 
-// Add a helper function to handle Google auth
+// Improved Google auth with better error handling
 export const signInWithGoogle = async () => {
   try {
+    // Check for credentials before attempting sign-in
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Supabase credentials are missing. Please check your environment variables.');
+    }
+    
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -69,19 +83,25 @@ export const signInWithGoogle = async () => {
     
     if (error) throw error;
     return data;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error signing in with Google:", error);
+    toast.error("Failed to sign in with Google", {
+      description: error.message || "Check your Supabase configuration."
+    });
     throw error;
   }
 };
 
-// Add a signOut helper function
+// Improved signOut helper function
 export const signOut = async () => {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error signing out:", error);
+    toast.error("Failed to sign out", {
+      description: error.message || "Please try again."
+    });
     throw error;
   }
 };
