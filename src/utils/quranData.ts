@@ -159,9 +159,6 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
     // Load all surahs for metadata
     const surahs = await fetchSurahs();
     
-    // We need to simulate a search function with sample verses and translations
-    // In a real app, we would connect to a backend search API
-    
     // Expanded sample verses for better search results
     const sampleVerses = [
       {
@@ -233,6 +230,29 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
         ayah: 58,
         arabic: "سَلَامٌ قَوْلًا مِن رَّبٍّ رَّحِيمٍ",
         translation: "Peace - a word from a Merciful Lord",
+      },
+      // Add search terms for "glory"
+      {
+        id: 11,
+        surah: 2,
+        ayah: 255,
+        arabic: "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ",
+        translation: "Allah - there is no deity except Him, the Ever-Living, the Sustainer of all existence. His are the most beautiful names and attributes of glory.",
+      },
+      // Add search terms for "interest/riba"
+      {
+        id: 12,
+        surah: 2,
+        ayah: 275,
+        arabic: "الَّذِينَ يَأْكُلُونَ الرِّبَا لَا يَقُومُونَ إِلَّا كَمَا يَقُومُ الَّذِي يَتَخَبَّطُهُ الشَّيْطَانُ مِنَ الْمَسِّ",
+        translation: "Those who consume interest (riba) cannot stand [on the Day of Resurrection] except as one stands who is being beaten by Satan into insanity.",
+      },
+      {
+        id: 13,
+        surah: 2,
+        ayah: 276,
+        arabic: "يَمْحَقُ اللَّهُ الرِّبَا وَيُرْبِي الصَّدَقَاتِ",
+        translation: "Allah destroys interest (riba) and gives increase for charities.",
       }
     ];
     

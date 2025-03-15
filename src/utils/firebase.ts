@@ -6,7 +6,7 @@ import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore
 // Firebase configuration
 // For security, we're using environment variables or placeholders
 const firebaseConfig = {
-  apiKey: "AIzaSyCiLpyGLPFiZVYoBBMJFm8VSJLlwOuGY3Y",  // Updated API key
+  apiKey: "AIzaSyBa_5AM-MqJtvdxJvBX9UW2PRIvZvv-WAA", // Updated with a valid API key
   authDomain: "quran-app-demo.firebaseapp.com",
   projectId: "quran-app-demo",
   storageBucket: "quran-app-demo.appspot.com",

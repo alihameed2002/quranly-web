@@ -3,14 +3,12 @@ import { useState } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { Search } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
 import { fetchSearchResults, Verse } from "@/utils/quranData";
 import { toast } from "sonner";
 
 const Explore = () => {
-  const { toast: uiToast } = useToast();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Verse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -18,7 +16,7 @@ const Explore = () => {
   
   const handleSearch = async () => {
     if (!query.trim()) {
-      toast("Search query is empty", {
+      toast.error("Search query is empty", {
         description: "Please enter a keyword to search for",
       });
       return;
@@ -32,17 +30,17 @@ const Explore = () => {
       setResults(searchResults);
       
       if (searchResults.length === 0) {
-        toast("No results found", {
+        toast.error("No results found", {
           description: `No verses found for "${query}"`,
         });
       } else {
-        toast("Search completed", {
+        toast.success("Search completed", {
           description: `Found ${searchResults.length} results for "${query}"`,
         });
       }
     } catch (error) {
       console.error("Search failed:", error);
-      toast("Search failed", {
+      toast.error("Search failed", {
         description: "An error occurred while searching. Please try again.",
       });
     } finally {

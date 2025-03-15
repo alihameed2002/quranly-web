@@ -16,8 +16,8 @@ export default function LoginButton({ variant = 'default', className }: LoginBut
     try {
       await signIn();
     } catch (error) {
+      console.error("Error signing in:", error);
       toast.error("Could not sign in. Please try again later.");
-      console.error("Sign in error:", error);
     }
   };
 
@@ -25,8 +25,8 @@ export default function LoginButton({ variant = 'default', className }: LoginBut
     try {
       await logout();
     } catch (error) {
+      console.error("Error signing out:", error);
       toast.error("Could not sign out. Please try again later.");
-      console.error("Sign out error:", error);
     }
   };
 
