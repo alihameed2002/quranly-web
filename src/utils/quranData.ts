@@ -81,7 +81,7 @@ export const fetchVerse = async (surahNumber: number, verseNumber: number): Prom
   }
 };
 
-// Fetch surah info
+// Fetch surah info - Fixed function name to match usage in QuranReader.tsx
 export const fetchSurah = async (surahNumber: number): Promise<Surah> => {
   try {
     const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);

@@ -38,7 +38,7 @@ const Index = () => {
       <Header
         totalPoints={progress.points / 1000}
         totalVerses={progress.totalVerses}
-        timeSpent={progress.getTimeSpentFormatted}
+        timeSpent={progress.timeSpent} // Fixed: Changed from getTimeSpentFormatted to timeSpent
         showBack={false}
       />
       
@@ -152,6 +152,33 @@ const Index = () => {
             <button className="w-full py-3 rounded-lg glass-card text-white font-medium hover:bg-white/10 transition-all duration-300">
               Continue Reading
             </button>
+            
+            {/* New content below the Read More button */}
+            <div className="mt-4 glass-card rounded-xl p-4">
+              <div className="flex flex-col space-y-4">
+                <h3 className="text-lg font-medium text-white">Today's Verse</h3>
+                
+                <div className="space-y-3">
+                  <p className="text-right text-xl leading-loose font-arabic text-white" dir="rtl">
+                    قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ
+                  </p>
+                  
+                  <p className="text-app-text-secondary">
+                    Moses reassured his people, "Seek Allah's help and be patient. Indeed, the earth belongs to Allah (alone). He grants it to whoever He chooses of His servants. The ultimate outcome belongs (only) to the righteous."
+                  </p>
+                  
+                  <div className="flex justify-between items-center text-sm text-app-text-secondary pt-2">
+                    <span>Surah Al-A'raf (7:128)</span>
+                    <button className="text-app-green flex items-center space-x-1">
+                      <span>Read Tafsir</span>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
