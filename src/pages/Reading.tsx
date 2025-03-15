@@ -19,13 +19,29 @@ const Reading = () => {
     const surahParam = params.get('surah');
     const verseParam = params.get('verse');
     
+    console.log(`URL parameters: surah=${surahParam}, verse=${verseParam}`);
+    
+    let validSurah = 7; // Default
+    let validVerse = 128; // Default
+    
     if (surahParam && !isNaN(Number(surahParam))) {
-      setCurrentSurah(Number(surahParam));
+      const surahNum = Number(surahParam);
+      // Validate surah number (1-114)
+      if (surahNum >= 1 && surahNum <= 114) {
+        validSurah = surahNum;
+      }
     }
     
     if (verseParam && !isNaN(Number(verseParam))) {
-      setCurrentVerse(Number(verseParam));
+      const verseNum = Number(verseParam);
+      if (verseNum >= 1) { // Simple validation, ideally we'd check against max verses per surah
+        validVerse = verseNum;
+      }
     }
+    
+    console.log(`Setting surah=${validSurah}, verse=${validVerse}`);
+    setCurrentSurah(validSurah);
+    setCurrentVerse(validVerse);
     
     // Simulate loading data
     const timer = setTimeout(() => {

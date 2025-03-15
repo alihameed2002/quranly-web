@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
@@ -25,30 +24,25 @@ const Explore = () => {
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const navigate = useNavigate();
   
-  // Initialize the search system
   useEffect(() => {
-    // Preload full Quran data for faster searches
     const initializeSearch = async () => {
       console.log("Initializing search system...");
       setIsInitializing(true);
-      setLoadingProgress(10); // Show initial progress
+      setLoadingProgress(10);
       
       try {
-        // Set up progress updates
         const progressInterval = setInterval(() => {
           setLoadingProgress(prev => {
-            // Slowly increase progress until 90% to indicate work is happening
             if (prev < 90) return prev + (90 - prev) * 0.1;
             return prev;
           });
         }, 1000);
         
-        // This will cache the full Quran data for faster subsequent searches
         const verses = await fetchFullQuranData();
         clearInterval(progressInterval);
         
         setTotalVerses(verses.length);
-        setLoadingProgress(100); // Complete the progress
+        setLoadingProgress(100);
         console.log(`Search system initialized with ${verses.length} verses`);
         
         toast({
@@ -56,7 +50,6 @@ const Explore = () => {
           description: `Loaded ${verses.length.toLocaleString()} verses for search`,
         });
         
-        // Add small delay before removing the progress indicator
         setTimeout(() => {
           setIsInitializing(false);
         }, 500);
@@ -73,26 +66,22 @@ const Explore = () => {
     
     initializeSearch();
     
-    // Load recent searches from localStorage
     const savedSearches = localStorage.getItem("recentSearches");
     if (savedSearches) {
       setRecentSearches(JSON.parse(savedSearches));
     }
   }, [toast]);
   
-  // Save recent searches to localStorage
   const addToRecentSearches = (searchQuery: string) => {
     const updatedSearches = [
       searchQuery,
       ...recentSearches.filter(s => s !== searchQuery)
-    ].slice(0, 5); // Keep only the 5 most recent
+    ].slice(0, 5);
     
     setRecentSearches(updatedSearches);
     localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
   };
   
-  // Create a debounced search function for better UX
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedSearch = useCallback(
     debounce((searchTerm: string) => {
       if (searchTerm.trim().length >= 3) {
@@ -117,12 +106,10 @@ const Explore = () => {
     console.log(`Searching for: "${queryToUse}"`);
     
     try {
-      // Get expanded search terms for display
       const terms = expandSearchTerms(queryToUse);
       setExpandedTerms(terms);
       console.log("Expanded terms:", terms);
       
-      // Perform the search
       const searchResults = await fetchSearchResults(queryToUse);
       
       console.log(`Search completed with ${searchResults.length} results`);
@@ -132,7 +119,6 @@ const Explore = () => {
       
       setResults(searchResults);
       
-      // Add to recent searches
       if (searchResults.length > 0) {
         addToRecentSearches(queryToUse);
       }
@@ -155,7 +141,6 @@ const Explore = () => {
     }
   };
   
-  // Handle input change with debounce for auto-search
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
@@ -168,12 +153,25 @@ const Explore = () => {
     }
   };
   
-  // Handle Enter key press for immediate search
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       debouncedSearch.cancel();
       handleSearch();
     }
+  };
+  
+  const navigateToVerse = (verse: Verse) => {
+    if (!verse.surah || !verse.ayah) {
+      toast({
+        title: "Navigation error",
+        description: "Cannot navigate to this verse due to missing information",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    console.log(`Navigating to surah: ${verse.surah}, ayah: ${verse.ayah}`);
+    navigate(`/reading?surah=${verse.surah}&verse=${verse.ayah}`);
   };
   
   return (
@@ -293,7 +291,7 @@ const Explore = () => {
                 <div 
                   key={`${result.surah}-${result.ayah}-${index}`}
                   className="glass-card rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors"
-                  onClick={() => navigate(`/reading?surah=${result.surah}&verse=${result.ayah}`)}
+                  onClick={() => navigateToVerse(result)}
                 >
                   <VerseCard
                     surahName={result.surahName || ""}

@@ -1,4 +1,3 @@
-
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
@@ -26,18 +25,34 @@ export default function QuranReader({
   const [verseData, setVerseData] = useState<Verse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [pointsEarned, setPointsEarned] = useState(7600);
+  const [error, setError] = useState<string | null>(null);
   
   // Load verse data when component mounts or when current verse changes
   useEffect(() => {
     const loadVerseData = async () => {
       setIsLoading(true);
+      setError(null);
+      
+      console.log(`Loading verse data for surah ${currentSurah}, verse ${currentVerseNumber}`);
+      
       try {
         const { surah, verse } = await fetchQuranData(currentSurah, currentVerseNumber);
+        
+        // Additional validation to ensure we got the right verse
+        if (verse.surah !== currentSurah || verse.ayah !== currentVerseNumber) {
+          console.warn(`Received incorrect verse: got surah ${verse.surah}, ayah ${verse.ayah} but requested surah ${currentSurah}, ayah ${currentVerseNumber}`);
+          // If we got a sample verse instead of the right one, show an error
+          if (verse.surah === 7 && verse.ayah === 128 && (currentSurah !== 7 || currentVerseNumber !== 128)) {
+            throw new Error("Could not load the requested verse.");
+          }
+        }
+        
         setSurahData(surah);
         setVerseData(verse);
         setPointsEarned(Math.floor(Math.random() * 5000) + 5000); // Random points for demo
       } catch (error) {
         console.error("Failed to load verse data:", error);
+        setError("Failed to load the Quran data. Please try again.");
         toast({
           title: "Error",
           description: "Failed to load the Quran data. Please try again.",
@@ -53,6 +68,7 @@ export default function QuranReader({
   
   // Update when props change
   useEffect(() => {
+    console.log(`Props updated: initialSurah=${initialSurah}, initialVerse=${initialVerse}`);
     setCurrentSurah(initialSurah);
     setCurrentVerseNumber(initialVerse);
   }, [initialSurah, initialVerse]);
@@ -105,6 +121,22 @@ export default function QuranReader({
     return (
       <div className="w-full flex justify-center items-center h-64">
         <div className="h-10 w-10 border-4 border-app-green border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  if (error && !verseData) {
+    return (
+      <div className="w-full flex flex-col justify-center items-center h-64 text-center px-4">
+        <div className="text-app-text-secondary mb-4">
+          Could not load the requested verse. The verse may not exist or there might be an issue with the data source.
+        </div>
+        <button 
+          onClick={() => window.location.href = '/reading'}
+          className="px-4 py-2 bg-app-green text-app-background-dark rounded-full"
+        >
+          Go to default verse
+        </button>
       </div>
     );
   }
