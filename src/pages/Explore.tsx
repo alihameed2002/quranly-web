@@ -161,7 +161,12 @@ const Explore = () => {
   };
   
   const navigateToVerse = (verse: Verse) => {
-    if (!verse.surah || !verse.ayah) {
+    // Check if verse has the necessary properties, with fallbacks
+    const surahNumber = verse.surah || (verse as any).surahNumber;
+    const ayahNumber = verse.ayah || (verse as any).ayahNumber || (verse as any).verseNumber;
+    
+    if (!surahNumber || !ayahNumber) {
+      console.error("Navigation error - Missing verse information:", verse);
       toast({
         title: "Navigation error",
         description: "Cannot navigate to this verse due to missing information",
@@ -170,8 +175,8 @@ const Explore = () => {
       return;
     }
     
-    console.log(`Navigating to surah: ${verse.surah}, ayah: ${verse.ayah}`);
-    navigate(`/reading?surah=${verse.surah}&verse=${verse.ayah}`);
+    console.log(`Navigating to surah: ${surahNumber}, ayah: ${ayahNumber}`);
+    navigate(`/reading?surah=${surahNumber}&verse=${ayahNumber}`);
   };
   
   return (
@@ -289,17 +294,17 @@ const Explore = () => {
             <div className="space-y-4">
               {results.map((result, index) => (
                 <div 
-                  key={`${result.surah}-${result.ayah}-${index}`}
+                  key={`${result.surah || index}-${result.ayah || index}-${index}`}
                   className="glass-card rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors"
                   onClick={() => navigateToVerse(result)}
                 >
                   <VerseCard
                     surahName={result.surahName || ""}
-                    surahNumber={result.surah}
-                    verseNumber={result.ayah}
+                    surahNumber={result.surah || 0}
+                    verseNumber={result.ayah || 0}
                     totalVerses={result.totalVerses || 0}
-                    arabicText={result.arabic}
-                    translation={result.translation}
+                    arabicText={result.arabic || ""}
+                    translation={result.translation || ""}
                     minimized={true}
                   />
                 </div>
