@@ -47,16 +47,25 @@ export const fetchStaticQuranData = async (): Promise<Verse[]> => {
     const verses: Verse[] = [];
     
     // Process the data into our format
-    data.forEach((surah: any) => {
-      const surahNumber = parseInt(surah.number, 10) || 0;
+    data.forEach((surah: any, surahIndex: number) => {
+      // Make sure we have a valid surah number
+      const surahNumber = parseInt(surah.number, 10);
+      if (isNaN(surahNumber) || surahNumber <= 0) {
+        console.warn(`Invalid surah number: ${surah.number}, using index + 1 instead`);
+      }
+      
+      // Use the surah number from the data, or fall back to index+1
+      const actualSurahNumber = (surahNumber > 0) ? surahNumber : (surahIndex + 1);
       const surahName = surah.englishName || surah.name || "";
       const totalVerses = surah.numberOfAyahs || surah.verses.length || 0;
+      
+      console.log(`Processing Surah ${actualSurahNumber}: ${surahName} with ${totalVerses} verses`);
       
       surah.verses.forEach((verse: any, index: number) => {
         const ayahNumber = index + 1;
         verses.push({
-          id: (surahNumber * 1000) + ayahNumber,
-          surah: surahNumber,
+          id: (actualSurahNumber * 1000) + ayahNumber,
+          surah: actualSurahNumber,
           ayah: ayahNumber,
           arabic: verse.arabic || "",
           translation: verse.translation || verse.text || "",
@@ -67,6 +76,20 @@ export const fetchStaticQuranData = async (): Promise<Verse[]> => {
     });
     
     console.log(`Loaded ${verses.length} verses from static JSON`);
+    
+    // Verify that we have proper surah numbers
+    const surahStats = verses.reduce((acc: Record<number, number>, verse) => {
+      acc[verse.surah] = (acc[verse.surah] || 0) + 1;
+      return acc;
+    }, {});
+    
+    console.log("Surah distribution:", Object.keys(surahStats).length, "unique surahs");
+    
+    // Check if we still have Surah 0 entries
+    if (surahStats[0]) {
+      console.warn(`Warning: ${surahStats[0]} verses have Surah 0`);
+    }
+    
     return verses;
   } catch (error) {
     console.error("Error loading static Quran data:", error);

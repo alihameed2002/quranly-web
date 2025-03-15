@@ -1,4 +1,3 @@
-
 import { Share, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -28,11 +27,15 @@ export default function VerseCard({
   const [isBookmarked, setIsBookmarked] = useState(false);
   const { toast } = useToast();
 
+  // Ensure we have valid numbers
+  const displaySurahNumber = surahNumber > 0 ? surahNumber : 1;
+  const displayVerseNumber = verseNumber > 0 ? verseNumber : 1;
+
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
     toast({
       title: isBookmarked ? "Bookmark removed" : "Bookmark added",
-      description: `${surahName} (${surahNumber}:${verseNumber})`,
+      description: `${surahName} (${displaySurahNumber}:${displayVerseNumber})`,
     });
   };
 
@@ -40,7 +43,7 @@ export default function VerseCard({
     // In a real app, this would use the Web Share API
     toast({
       title: "Sharing verse",
-      description: `${surahName} (${surahNumber}:${verseNumber})`,
+      description: `${surahName} (${displaySurahNumber}:${displayVerseNumber})`,
     });
   };
 
@@ -48,9 +51,9 @@ export default function VerseCard({
     return (
       <div className={cn("w-full", className)}>
         <div className="flex flex-col mb-2">
-          <h3 className="text-white font-medium">{surahName || ""}</h3>
+          <h3 className="text-white font-medium">{surahName || `Surah ${displaySurahNumber}`}</h3>
           <p className="text-app-text-secondary text-sm">
-            Surah {surahNumber || 0} : Ayah {verseNumber || 0}
+            Surah {displaySurahNumber} : Ayah {displayVerseNumber}
           </p>
         </div>
         <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">
@@ -68,10 +71,10 @@ export default function VerseCard({
       <div className="flex items-center gap-3 px-6">
         <div className="flex-1 text-center">
           <h2 className="text-lg font-medium text-white">
-            {surahNumber}. {surahName}
+            {displaySurahNumber}. {surahName || `Surah ${displaySurahNumber}`}
           </h2>
           <p className="text-sm text-app-text-secondary">
-            {verseNumber}/{totalVerses}
+            {displayVerseNumber}/{totalVerses || 1}
           </p>
         </div>
         

@@ -1,4 +1,3 @@
-
 import { Search } from "lucide-react";
 import VerseCard from "@/components/VerseCard";
 import { Verse } from "@/utils/quranData";
@@ -29,23 +28,28 @@ const SearchResults = ({
           Search Results ({results.length})
         </h2>
         <div className="space-y-4">
-          {results.map((result, index) => (
-            <div 
-              key={`${result.surah || index}-${result.ayah || index}-${index}`}
-              className="glass-card rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors"
-              onClick={() => navigateToVerse(result)}
-            >
-              <VerseCard
-                surahName={result.surahName || ""}
-                surahNumber={result.surah || 0} 
-                verseNumber={result.ayah || 0}
-                totalVerses={result.totalVerses || 0}
-                arabicText={result.arabic || ""}
-                translation={result.translation || ""}
-                minimized={true}
-              />
-            </div>
-          ))}
+          {results.map((result, index) => {
+            // Ensure we have valid surah number
+            const surahNumber = result.surah > 0 ? result.surah : index + 1;
+            
+            return (
+              <div 
+                key={`${surahNumber}-${result.ayah || index}-${index}`}
+                className="glass-card rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors"
+                onClick={() => navigateToVerse(result)}
+              >
+                <VerseCard
+                  surahName={result.surahName || `Surah ${surahNumber}`}
+                  surahNumber={surahNumber}
+                  verseNumber={result.ayah || 0}
+                  totalVerses={result.totalVerses || 0}
+                  arabicText={result.arabic || ""}
+                  translation={result.translation || ""}
+                  minimized={true}
+                />
+              </div>
+            );
+          })}
         </div>
       </div>
     );
