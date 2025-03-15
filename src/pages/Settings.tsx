@@ -1,30 +1,9 @@
 
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
-import { Settings as SettingsIcon, User } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import LoginButton from "@/components/LoginButton";
+import { Settings as SettingsIcon } from "lucide-react";
 
 const Settings = () => {
-  const { user } = useAuth();
-
-  // Helper to safely get user display name
-  const getUserDisplayName = () => {
-    if (!user) return "User";
-    return user.user_metadata?.full_name || 
-           user.user_metadata?.name || 
-           user.email?.split('@')[0] || 
-           "User";
-  };
-
-  // Helper to safely get user avatar
-  const getUserAvatar = () => {
-    if (!user) return null;
-    return user.user_metadata?.avatar_url || 
-           user.user_metadata?.picture || 
-           null;
-  };
-
   return (
     <div className="min-h-screen bg-app-background pb-20">
       <Header showBack={false} />
@@ -40,46 +19,9 @@ const Settings = () => {
           </div>
         </div>
         
-        <div className="px-6 space-y-6">
-          <div className="glass-card rounded-xl p-6 space-y-4">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="h-10 w-10 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                <User className="h-5 w-5 text-purple-500" />
-              </div>
-              <h3 className="text-lg font-medium text-white">Account</h3>
-            </div>
-            
-            {user ? (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  {getUserAvatar() ? (
-                    <img 
-                      src={getUserAvatar()} 
-                      alt={getUserDisplayName()} 
-                      className="h-12 w-12 rounded-full"
-                    />
-                  ) : (
-                    <div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center text-green-500 font-medium">
-                      {getUserDisplayName().charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div>
-                    <h4 className="text-white font-medium">{getUserDisplayName()}</h4>
-                    <p className="text-app-text-secondary text-sm">{user.email}</p>
-                  </div>
-                </div>
-                <LoginButton variant="outline" className="w-full" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-app-text-secondary">Sign in to save your reading progress.</p>
-                <LoginButton className="w-full" />
-              </div>
-            )}
-          </div>
-          
-          <div className="glass-card rounded-xl p-6">
-            <p className="text-center text-app-text-secondary">More settings will be implemented in a future update.</p>
+        <div className="px-6">
+          <div className="glass-card rounded-xl p-4">
+            <p className="text-center text-app-text-secondary">Settings will be implemented in a future update.</p>
           </div>
         </div>
       </main>

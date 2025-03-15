@@ -3,10 +3,9 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
 import { fetchQuranData, fetchSurah, Verse, Surah } from "@/utils/quranData";
+import { useProgress } from "@/hooks/useProgress";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 interface QuranReaderProps {
   className?: string;
@@ -19,32 +18,14 @@ export default function QuranReader({
   initialSurah = 7, // Default to Al-Araf
   initialVerse = 128 // Default to the sample verse
 }: QuranReaderProps) {
+  const { markVerseAsRead } = useProgress();
   const { toast } = useToast();
-  const { user, userProgress, updateUserProgress } = useAuth();
-  const navigate = useNavigate();
-  
-  // Initialize with userProgress if available, otherwise use props
-  const [currentSurah, setCurrentSurah] = useState(
-    userProgress?.lastSurah || initialSurah
-  );
-  const [currentVerseNumber, setCurrentVerseNumber] = useState(
-    userProgress?.lastVerse || initialVerse
-  );
-  
+  const [currentSurah, setCurrentSurah] = useState(initialSurah);
+  const [currentVerseNumber, setCurrentVerseNumber] = useState(initialVerse);
   const [surahData, setSurahData] = useState<Surah | null>(null);
   const [verseData, setVerseData] = useState<Verse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Set initial state from URL or user progress
-  useEffect(() => {
-    if (userProgress) {
-      setCurrentSurah(userProgress.lastSurah);
-      setCurrentVerseNumber(userProgress.lastVerse);
-    } else {
-      setCurrentSurah(initialSurah);
-      setCurrentVerseNumber(initialVerse);
-    }
-  }, [userProgress, initialSurah, initialVerse]);
+  const [pointsEarned, setPointsEarned] = useState(7600);
   
   // Load verse data when component mounts or when current verse changes
   useEffect(() => {
@@ -54,30 +35,7 @@ export default function QuranReader({
         const { surah, verse } = await fetchQuranData(currentSurah, currentVerseNumber);
         setSurahData(surah);
         setVerseData(verse);
-        
-        // Save progress whenever verse changes (if user is logged in)
-        if (user) {
-          const updatedProgress = {
-            lastSurah: currentSurah,
-            lastVerse: currentVerseNumber,
-            completedVerses: userProgress?.completedVerses || {},
-            lastReadTimestamp: new Date().getTime()
-          };
-          
-          // Mark verse as completed
-          if (!updatedProgress.completedVerses[currentSurah]) {
-            updatedProgress.completedVerses[currentSurah] = [];
-          }
-          
-          if (!updatedProgress.completedVerses[currentSurah].includes(currentVerseNumber)) {
-            updatedProgress.completedVerses[currentSurah].push(currentVerseNumber);
-          }
-          
-          updateUserProgress(updatedProgress);
-          
-          // Update URL with current position
-          navigate(`/reading?surah=${currentSurah}&verse=${currentVerseNumber}`, { replace: true });
-        }
+        setPointsEarned(Math.floor(Math.random() * 5000) + 5000); // Random points for demo
       } catch (error) {
         console.error("Failed to load verse data:", error);
         toast({
@@ -91,7 +49,13 @@ export default function QuranReader({
     };
     
     loadVerseData();
-  }, [currentSurah, currentVerseNumber, toast, user, userProgress, updateUserProgress, navigate]);
+  }, [currentSurah, currentVerseNumber, toast]);
+  
+  // Update when props change
+  useEffect(() => {
+    setCurrentSurah(initialSurah);
+    setCurrentVerseNumber(initialVerse);
+  }, [initialSurah, initialVerse]);
   
   const goToNextVerse = () => {
     if (isLoading || !surahData) return;
@@ -99,10 +63,12 @@ export default function QuranReader({
     if (currentVerseNumber < surahData.numberOfAyahs) {
       // Go to next verse in the same surah
       setCurrentVerseNumber(prev => prev + 1);
+      markVerseAsRead(currentSurah, currentVerseNumber);
     } else if (currentSurah < 114) {
       // Go to first verse of next surah
       setCurrentSurah(prev => prev + 1);
       setCurrentVerseNumber(1);
+      markVerseAsRead(currentSurah, currentVerseNumber);
     } else {
       // End of Quran
       toast({
@@ -128,21 +94,10 @@ export default function QuranReader({
   };
 
   const handleDone = () => {
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to save your progress.",
-        variant: "destructive",
-      });
-      navigate("/settings");
-      return;
-    }
-    
-    goToNextVerse();
-    
+    markVerseAsRead(currentSurah, currentVerseNumber);
     toast({
       title: "Great job!",
-      description: "Your progress has been saved.",
+      description: `You've earned ${pointsEarned} points for this verse.`,
     });
   };
   
@@ -200,15 +155,10 @@ export default function QuranReader({
         </button>
       </div>
       
-      {user ? (
-        <div className="text-center text-sm text-app-text-secondary">
-          <p>Your progress is being saved automatically</p>
-        </div>
-      ) : (
-        <div className="text-center text-sm text-app-text-secondary">
-          <p>Sign in to save your progress</p>
-        </div>
-      )}
+      <div className="text-center text-sm text-app-text-secondary">
+        <div className="font-medium text-app-green">+{pointsEarned}</div>
+        <p>Points earned for this verse</p>
+      </div>
     </div>
   );
 }

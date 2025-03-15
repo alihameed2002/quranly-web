@@ -5,7 +5,6 @@ import QuranReader from "@/components/QuranReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
 
 const Reading = () => {
   const [loading, setLoading] = useState(true);
@@ -13,26 +12,19 @@ const Reading = () => {
   const [currentVerse, setCurrentVerse] = useState(128); // Default to sample verse
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, userProgress } = useAuth();
   
   useEffect(() => {
-    // First check URL parameters
+    // Parse surah and verse from URL query parameters
     const params = new URLSearchParams(location.search);
     const surahParam = params.get('surah');
     const verseParam = params.get('verse');
     
     if (surahParam && !isNaN(Number(surahParam))) {
       setCurrentSurah(Number(surahParam));
-    } else if (user && userProgress) {
-      // If no URL params but user is logged in, use their progress
-      setCurrentSurah(userProgress.lastSurah);
     }
     
     if (verseParam && !isNaN(Number(verseParam))) {
       setCurrentVerse(Number(verseParam));
-    } else if (user && userProgress) {
-      // If no URL params but user is logged in, use their progress
-      setCurrentVerse(userProgress.lastVerse);
     }
     
     // Simulate loading data
@@ -41,7 +33,7 @@ const Reading = () => {
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, [location.search, user, userProgress]);
+  }, [location.search]);
   
   if (loading) {
     return (
@@ -65,9 +57,7 @@ const Reading = () => {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Reading Quran</h1>
-            <p className="text-app-text-secondary">
-              {user ? "Continue your journey" : "Sign in to save your progress"}
-            </p>
+            <p className="text-app-text-secondary">Continue your journey</p>
           </div>
         </div>
         
