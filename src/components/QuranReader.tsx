@@ -32,6 +32,9 @@ export default function QuranReader({
   const navigate = useNavigate();
   
   const fromSearch = location.state?.fromSearch || false;
+  const searchQuery = location.state?.lastQuery || "";
+  const searchResults = location.state?.results || [];
+  const scrollPosition = location.state?.scrollPosition || 0;
   
   useEffect(() => {
     const loadVerseData = async () => {
@@ -139,7 +142,14 @@ export default function QuranReader({
   };
   
   const returnToSearchResults = () => {
-    navigate('/explore', { state: { preserveSearch: true } });
+    navigate('/explore', { 
+      state: { 
+        preserveSearch: true,
+        lastQuery: searchQuery,
+        results: searchResults,
+        scrollPosition: scrollPosition
+      } 
+    });
   };
   
   if (isLoading && !verseData) {
