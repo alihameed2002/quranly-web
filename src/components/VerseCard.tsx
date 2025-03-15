@@ -1,4 +1,3 @@
-
 import { Share, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -47,11 +46,9 @@ export default function VerseCard({
   if (minimized) {
     return (
       <div className={cn("w-full", className)}>
-        <div className="flex justify-between mb-2">
-          <div>
-            <h3 className="text-white font-medium">{surahNumber}. {surahName}</h3>
-            <p className="text-app-text-secondary text-sm">{verseNumber}/{totalVerses}</p>
-          </div>
+        <div className="flex flex-col mb-2">
+          <h3 className="text-white font-medium">{surahName}</h3>
+          <p className="text-app-text-secondary text-sm">Surah {surahNumber} : Ayah {verseNumber}</p>
         </div>
         <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">
           {arabicText.length > 100 ? arabicText.substring(0, 100) + '...' : arabicText}
