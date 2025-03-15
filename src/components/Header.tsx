@@ -6,11 +6,17 @@ import { cn } from "@/lib/utils";
 interface HeaderProps {
   showBack?: boolean;
   className?: string;
+  totalPoints?: number;
+  totalVerses?: number;
+  timeSpent?: string;
 }
 
 export default function Header({ 
   showBack = true, 
-  className
+  className,
+  totalPoints,
+  totalVerses,
+  timeSpent
 }: HeaderProps) {
   return (
     <header className={cn("w-full px-5 py-4 flex items-center justify-between", className)}>
