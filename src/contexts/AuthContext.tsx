@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from 'firebase/auth';
 import { onAuthStateChange, signInWithGoogle, signOut, UserProgress, getUserProgress, saveUserProgress } from '@/utils/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -19,7 +20,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange(async (authUser) => {
@@ -49,16 +50,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await signInWithGoogle();
-      toast({
-        title: "Welcome!",
-        description: "You've successfully signed in.",
+      toast("Welcome!", {
+        description: "You've successfully signed in."
       });
     } catch (error) {
       console.error("Error signing in:", error);
-      toast({
-        title: "Error signing in",
-        description: "Please try again later.",
-        variant: "destructive",
+      toast("Error signing in", {
+        description: "Please try again later."
       });
     } finally {
       setLoading(false);
@@ -69,16 +67,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       setLoading(true);
       await signOut();
-      toast({
-        title: "Signed out",
-        description: "You've been successfully signed out.",
+      toast("Signed out", {
+        description: "You've been successfully signed out."
       });
     } catch (error) {
       console.error("Error signing out:", error);
-      toast({
-        title: "Error signing out",
-        description: "Please try again later.",
-        variant: "destructive",
+      toast("Error signing out", {
+        description: "Please try again later."
       });
     } finally {
       setLoading(false);
@@ -93,10 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserProgress(progress);
     } catch (error) {
       console.error("Error updating progress:", error);
-      toast({
-        title: "Error saving progress",
-        description: "Your reading progress couldn't be saved.",
-        variant: "destructive",
+      toast("Error saving progress", {
+        description: "Your reading progress couldn't be saved."
       });
     }
   };

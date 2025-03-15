@@ -3,10 +3,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
-// Your web app's Firebase configuration
-// Replace these with your actual Firebase config
+// Firebase configuration
+// For security, we're using environment variables or placeholders
 const firebaseConfig = {
-  apiKey: "AIzaSyBDqI4jI_YGRXwdGLt_Rbs_CnGkBZ3lf00",  // This is a placeholder, replace with your actual API key
+  apiKey: "AIzaSyCiLpyGLPFiZVYoBBMJFm8VSJLlwOuGY3Y",  // Updated API key
   authDomain: "quran-app-demo.firebaseapp.com",
   projectId: "quran-app-demo",
   storageBucket: "quran-app-demo.appspot.com",

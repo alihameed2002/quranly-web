@@ -2,6 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LoginButtonProps {
   variant?: 'default' | 'outline' | 'secondary' | 'ghost';
@@ -10,6 +11,24 @@ interface LoginButtonProps {
 
 export default function LoginButton({ variant = 'default', className }: LoginButtonProps) {
   const { user, signIn, logout, loading } = useAuth();
+
+  const handleSignIn = async () => {
+    try {
+      await signIn();
+    } catch (error) {
+      toast.error("Could not sign in. Please try again later.");
+      console.error("Sign in error:", error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      toast.error("Could not sign out. Please try again later.");
+      console.error("Sign out error:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -23,7 +42,7 @@ export default function LoginButton({ variant = 'default', className }: LoginBut
   if (user) {
     return (
       <Button 
-        onClick={logout} 
+        onClick={handleLogout} 
         variant="outline" 
         className={className}
       >
@@ -35,7 +54,7 @@ export default function LoginButton({ variant = 'default', className }: LoginBut
 
   return (
     <Button 
-      onClick={signIn} 
+      onClick={handleSignIn} 
       variant={variant} 
       className={className}
     >

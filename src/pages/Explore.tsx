@@ -6,95 +6,19 @@ import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
-
-interface SearchResult {
-  id: number;
-  surah: number;
-  ayah: number;
-  arabic: string;
-  translation: string;
-  surahName: string;
-  totalVerses: number;
-}
+import { fetchSearchResults, Verse } from "@/utils/quranData";
+import { toast } from "sonner";
 
 const Explore = () => {
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<Verse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
-
-  // Sample verses for demonstration (in a real app, this would come from an API)
-  const sampleVerses = [
-    {
-      id: 1,
-      surah: 2,
-      ayah: 155,
-      arabic: "وَلَنَبْلُوَنَّكُم بِشَيْءٍ مِّنَ الْخَوْفِ وَالْجُوعِ وَنَقْصٍ مِّنَ الْأَمْوَالِ وَالْأَنفُسِ وَالثَّمَرَاتِ ۗ وَبَشِّرِ الصَّابِرِينَ",
-      translation: "And We will surely test you with something of fear and hunger and a loss of wealth and lives and fruits, but give good tidings to the patient",
-      surahName: "Al-Baqarah",
-      totalVerses: 286
-    },
-    {
-      id: 2,
-      surah: 3,
-      ayah: 159,
-      arabic: "فَبِمَا رَحْمَةٍ مِّنَ اللَّهِ لِنتَ لَهُمْ ۖ وَلَوْ كُنتَ فَظًّا غَلِيظَ الْقَلْبِ لَانفَضُّوا مِنْ حَوْلِكَ ۖ فَاعْفُ عَنْهُمْ وَاسْتَغْفِرْ لَهُمْ وَشَاوِرْهُمْ فِي الْأَمْرِ ۖ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى اللَّهِ ۚ إِنَّ اللَّهَ يُحِبُّ الْمُتَوَكِّلِينَ",
-      translation: "So by mercy from Allah, [O Muhammad], you were lenient with them. And if you had been rude [in speech] and harsh in heart, they would have disbanded from about you. So pardon them and ask forgiveness for them and consult them in the matter. And when you have decided, then rely upon Allah. Indeed, Allah loves those who rely [upon Him].",
-      surahName: "Ali 'Imran",
-      totalVerses: 200
-    },
-    {
-      id: 3,
-      surah: 7,
-      ayah: 128,
-      arabic: "قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ",
-      translation: "Moses reassured his people, \"Seek Allah's help and be patient. Indeed, the earth belongs to Allah (alone). He grants it to whoever He chooses of His servants. The ultimate outcome belongs (only) to the righteous.\"",
-      surahName: "Al-Araf",
-      totalVerses: 206
-    },
-    {
-      id: 4,
-      surah: 94,
-      ayah: 5,
-      arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
-      translation: "For indeed, with hardship [will be] ease.",
-      surahName: "Ash-Sharh",
-      totalVerses: 8
-    },
-    {
-      id: 5,
-      surah: 94,
-      ayah: 6,
-      arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
-      translation: "Indeed, with hardship [will be] ease.",
-      surahName: "Ash-Sharh",
-      totalVerses: 8
-    },
-    {
-      id: 6,
-      surah: 21,
-      ayah: 87,
-      arabic: "وَذَا النُّونِ إِذ ذَّهَبَ مُغَاضِبًا فَظَنَّ أَن لَّن نَّقْدِرَ عَلَيْهِ فَنَادَىٰ فِي الظُّلُمَاتِ أَن لَّا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ",
-      translation: "And [mention] the man of the fish, when he went off in anger and thought that We would not decree [anything] upon him. And he called out within the darknesses, 'There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.'",
-      surahName: "Al-Anbya",
-      totalVerses: 112
-    },
-    {
-      id: 7,
-      surah: 2,
-      ayah: 286,
-      arabic: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
-      translation: "Allah does not burden a soul beyond that it can bear",
-      surahName: "Al-Baqarah",
-      totalVerses: 286
-    }
-  ];
   
   const handleSearch = async () => {
     if (!query.trim()) {
-      toast({
-        title: "Search query is empty",
+      toast("Search query is empty", {
         description: "Please enter a keyword to search for",
       });
       return;
@@ -102,35 +26,24 @@ const Explore = () => {
     
     setIsSearching(true);
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Perform search on the sample verses
-      const lowerQuery = query.toLowerCase();
-      const searchResults = sampleVerses.filter(verse => 
-        verse.translation.toLowerCase().includes(lowerQuery) || 
-        verse.surahName.toLowerCase().includes(lowerQuery)
-      );
+      console.log("Executing search for:", query);
+      const searchResults = await fetchSearchResults(query);
       
       setResults(searchResults);
       
       if (searchResults.length === 0) {
-        toast({
-          title: "No results found",
+        toast("No results found", {
           description: `No verses found for "${query}"`,
         });
       } else {
-        toast({
-          title: "Search completed",
+        toast("Search completed", {
           description: `Found ${searchResults.length} results for "${query}"`,
         });
       }
     } catch (error) {
       console.error("Search failed:", error);
-      toast({
-        title: "Search failed",
+      toast("Search failed", {
         description: "An error occurred while searching. Please try again.",
-        variant: "destructive",
       });
     } finally {
       setIsSearching(false);
@@ -189,10 +102,10 @@ const Explore = () => {
                   onClick={() => navigate(`/reading?surah=${result.surah}&verse=${result.ayah}`)}
                 >
                   <VerseCard
-                    surahName={result.surahName}
+                    surahName={result.surahName || `Surah ${result.surah}`}
                     surahNumber={result.surah}
                     verseNumber={result.ayah}
-                    totalVerses={result.totalVerses}
+                    totalVerses={result.totalVerses || 0}
                     arabicText={result.arabic}
                     translation={result.translation}
                     minimized={true}

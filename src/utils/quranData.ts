@@ -154,17 +154,15 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
   if (!query.trim()) return [];
   
   try {
-    // In a real app, we would connect to a proper search API
-    // For now, we'll simulate search results with a few hard-coded verses
-    const searchResults: Verse[] = [];
+    console.log("Searching for:", query);
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Implementing a simple search with the sample verses we have
+    // Load all surahs for metadata
     const surahs = await fetchSurahs();
     
-    // For demo purposes, add a few sample verses that we'll "search through"
+    // We need to simulate a search function with sample verses and translations
+    // In a real app, we would connect to a backend search API
+    
+    // Expanded sample verses for better search results
     const sampleVerses = [
       {
         id: 1,
@@ -172,17 +170,13 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
         ayah: 155,
         arabic: "وَلَنَبْلُوَنَّكُم بِشَيْءٍ مِّنَ الْخَوْفِ وَالْجُوعِ وَنَقْصٍ مِّنَ الْأَمْوَالِ وَالْأَنفُسِ وَالثَّمَرَاتِ ۗ وَبَشِّرِ الصَّابِرِينَ",
         translation: "And We will surely test you with something of fear and hunger and a loss of wealth and lives and fruits, but give good tidings to the patient",
-        surahName: "Al-Baqarah",
-        totalVerses: 286
       },
       {
         id: 2,
         surah: 3,
         ayah: 159,
         arabic: "فَبِمَا رَحْمَةٍ مِّنَ اللَّهِ لِنتَ لَهُمْ ۖ وَلَوْ كُنتَ فَظًّا غَلِيظَ الْقَلْبِ لَانفَضُّوا مِنْ حَوْلِكَ ۖ فَاعْفُ عَنْهُمْ وَاسْتَغْفِرْ لَهُمْ وَشَاوِرْهُمْ فِي الْأَمْرِ ۖ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى اللَّهِ ۚ إِنَّ اللَّهَ يُحِبُّ الْمُتَوَكِّلِينَ",
-        translation: "So by mercy from Allah, [O Muhammad], you were lenient with them. And if you had been rude [in speech] and harsh in heart, they would have disbanded from about you. So pardon them and ask forgiveness for them and consult them in the matter. And when you have decided, then rely upon Allah. Indeed, Allah loves those who rely [upon Him].",
-        surahName: "Ali 'Imran",
-        totalVerses: 200
+        translation: "So by mercy from Allah, you were lenient with them. And if you had been rude in speech and harsh in heart, they would have disbanded from about you. So pardon them and ask forgiveness for them and consult them in the matter. And when you have decided, then rely upon Allah. Indeed, Allah loves those who rely upon Him.",
       },
       {
         id: 3,
@@ -190,38 +184,78 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
         ayah: 128,
         arabic: sampleVerse.arabic,
         translation: sampleVerse.translation,
-        surahName: "Al-Araf",
-        totalVerses: 206
       },
       {
         id: 4,
         surah: 94,
         ayah: 5,
         arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
-        translation: "For indeed, with hardship [will be] ease.",
-        surahName: "Ash-Sharh",
-        totalVerses: 8
+        translation: "For indeed, with hardship comes ease.",
       },
       {
         id: 5,
         surah: 94,
         ayah: 6,
         arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
-        translation: "Indeed, with hardship [will be] ease.",
-        surahName: "Ash-Sharh",
-        totalVerses: 8
+        translation: "Indeed, with hardship comes ease.",
+      },
+      {
+        id: 6,
+        surah: 21,
+        ayah: 87,
+        arabic: "وَذَا النُّونِ إِذ ذَّهَبَ مُغَاضِبًا فَظَنَّ أَن لَّن نَّقْدِرَ عَلَيْهِ فَنَادَىٰ فِي الظُّلُمَاتِ أَن لَّا إِلَٰهَ إِلَّا أَنتَ سُبْحَانَكَ إِنِّي كُنتُ مِنَ الظَّالِمِينَ",
+        translation: "And remember the man of the fish, when he went off in anger and thought that We would not decree anything upon him. And he called out within the darknesses, 'There is no deity except You; exalted are You. Indeed, I have been of the wrongdoers.'",
+      },
+      {
+        id: 7,
+        surah: 2,
+        ayah: 286,
+        arabic: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا",
+        translation: "Allah does not burden a soul beyond that it can bear",
+      },
+      {
+        id: 8,
+        surah: 2,
+        ayah: 45,
+        arabic: "وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ ۚ وَإِنَّهَا لَكَبِيرَةٌ إِلَّا عَلَى الْخَاشِعِينَ",
+        translation: "And seek help through patience and prayer, and indeed, it is difficult except for the humbly submissive",
+      },
+      {
+        id: 9,
+        surah: 16,
+        ayah: 32,
+        arabic: "الَّذِينَ تَتَوَفَّاهُمُ الْمَلَائِكَةُ طَيِّبِينَ ۙ يَقُولُونَ سَلَامٌ عَلَيْكُمُ ادْخُلُوا الْجَنَّةَ بِمَا كُنتُمْ تَعْمَلُونَ",
+        translation: "Those whom the angels take in death, in a state of purity, saying, 'Peace be upon you. Enter Paradise for what you used to do.'",
+      },
+      {
+        id: 10,
+        surah: 36,
+        ayah: 58,
+        arabic: "سَلَامٌ قَوْلًا مِن رَّبٍّ رَّحِيمٍ",
+        translation: "Peace - a word from a Merciful Lord",
       }
     ];
+    
+    // Add surah name and total verses to each verse
+    const enrichedVerses = sampleVerses.map(verse => {
+      const surahInfo = surahs.find(s => s.id === verse.surah);
+      return {
+        ...verse,
+        surahName: surahInfo?.englishName || `Surah ${verse.surah}`,
+        totalVerses: surahInfo?.numberOfAyahs || 0
+      };
+    });
     
     // Simple search function
     const lowerQuery = query.toLowerCase();
     
-    // Filter verses that match the query
-    const filteredVerses = sampleVerses.filter(verse => 
+    // Filter verses that match the query in translation or surahName
+    const filteredVerses = enrichedVerses.filter(verse => 
       verse.translation.toLowerCase().includes(lowerQuery) || 
       verse.surahName.toLowerCase().includes(lowerQuery)
     );
     
+    console.log(`Found ${filteredVerses.length} verses matching "${query}"`);
     return filteredVerses;
   } catch (error) {
     console.error("Error performing search:", error);
