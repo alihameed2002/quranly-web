@@ -2,16 +2,12 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import QuranReader from "@/components/QuranReader";
-import AudioPlayer from "@/components/AudioPlayer";
 import Navigation from "@/components/Navigation";
-import { useProgress } from "@/hooks/useProgress";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen } from "lucide-react";
 
 const Reading = () => {
-  const { progress, getTimeSpentFormatted } = useProgress();
   const [loading, setLoading] = useState(true);
-  const [showAudioPlayer, setShowAudioPlayer] = useState(false);
   const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
   const [currentVerse, setCurrentVerse] = useState(128); // Default to sample verse
   const navigate = useNavigate();
@@ -50,17 +46,9 @@ const Reading = () => {
     );
   }
   
-  // Format timeSpent for Header component
-  const formattedTimeSpent = getTimeSpentFormatted();
-  
   return (
     <div className="min-h-screen bg-app-background pb-20">
-      <Header
-        totalPoints={progress.points / 1000}
-        totalVerses={progress.totalVerses}
-        timeSpent={formattedTimeSpent}
-        showBack={false}
-      />
+      <Header showBack={false} />
       
       <main className="max-w-screen-md mx-auto space-y-8 py-4">
         <div className="px-6 flex items-center space-x-3">
@@ -77,24 +65,6 @@ const Reading = () => {
           initialSurah={currentSurah}
           initialVerse={currentVerse}
         />
-        
-        <div className="px-6">
-          <button 
-            onClick={() => setShowAudioPlayer(!showAudioPlayer)}
-            className="w-full py-3 rounded-lg glass-card text-white font-medium hover:bg-white/10 transition-all duration-300"
-          >
-            {showAudioPlayer ? "Hide Audio Player" : "Show Audio Player"}
-          </button>
-          
-          {showAudioPlayer && (
-            <div className="mt-4">
-              <AudioPlayer 
-                surahId={currentSurah}
-                verseId={currentVerse}
-              />
-            </div>
-          )}
-        </div>
       </main>
       
       <Navigation />

@@ -6,17 +6,11 @@ import { cn } from "@/lib/utils";
 interface HeaderProps {
   showBack?: boolean;
   className?: string;
-  totalPoints?: number;
-  totalVerses?: number;
-  timeSpent?: string;
 }
 
 export default function Header({ 
   showBack = true, 
-  className,
-  totalPoints = 457.1,
-  totalVerses = 75,
-  timeSpent = "17:34"
+  className
 }: HeaderProps) {
   return (
     <header className={cn("w-full px-5 py-4 flex items-center justify-between", className)}>
@@ -31,32 +25,7 @@ export default function Header({
         <div className="w-12"></div> 
       )}
       
-      <div className="flex items-center gap-4 px-6 py-3 rounded-full glass-card">
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-gradient-to-r from-pink-400 to-pink-500 flex items-center justify-center">
-            <span className="sr-only">Points</span>
-          </div>
-          <span className="text-white font-medium">{totalPoints}K</span>
-        </div>
-        
-        <div className="w-px h-5 bg-white/20"></div>
-        
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-gradient-to-r from-blue-400 to-blue-500 flex items-center justify-center">
-            <span className="sr-only">Verses</span>
-          </div>
-          <span className="text-white font-medium">{totalVerses}</span>
-        </div>
-        
-        <div className="w-px h-5 bg-white/20"></div>
-        
-        <div className="flex items-center gap-2">
-          <div className="h-6 w-6 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 flex items-center justify-center">
-            <span className="sr-only">Time</span>
-          </div>
-          <span className="text-white font-medium">{timeSpent}</span>
-        </div>
-      </div>
+      <h1 className="text-xl font-medium text-white">Quran App</h1>
       
       <Link 
         to="/settings" 

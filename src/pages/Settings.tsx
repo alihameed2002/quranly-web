@@ -1,24 +1,12 @@
 
-import { useState } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
-import { useProgress } from "@/hooks/useProgress";
 import { Settings as SettingsIcon } from "lucide-react";
 
 const Settings = () => {
-  const { progress, getTimeSpentFormatted } = useProgress();
-  
-  // Format timeSpent for Header component
-  const formattedTimeSpent = getTimeSpentFormatted();
-  
   return (
     <div className="min-h-screen bg-app-background pb-20">
-      <Header
-        totalPoints={progress.points / 1000}
-        totalVerses={progress.totalVerses}
-        timeSpent={formattedTimeSpent}
-        showBack={false}
-      />
+      <Header showBack={false} />
       
       <main className="max-w-screen-md mx-auto space-y-8 py-4">
         <div className="px-6 flex items-center space-x-3">
