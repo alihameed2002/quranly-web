@@ -1,263 +1,247 @@
 
 import { Verse } from './quranData';
 
-// Expanded map of common Islamic/Quranic terms and their synonyms 
-// This helps with finding related terms
-const synonymMap: Record<string, string[]> = {
-  // Divine attributes and names
-  "god": ["allah", "lord", "creator", "divine", "deity", "almighty"],
-  "allah": ["god", "lord", "creator", "divine", "deity", "almighty"],
-  "mercy": ["compassion", "forgiveness", "kindness", "grace", "clemency", "benevolence", "rahma", "rahman", "rahim"],
-  "forgiveness": ["mercy", "pardon", "clemency", "absolution", "forgive", "forgiving", "ghafoor", "ghaffar"],
-  
-  // Spiritual concepts
-  "prayer": ["salah", "worship", "supplication", "dua", "pray", "praying", "salat"],
-  "faith": ["belief", "iman", "conviction", "trust", "devotion", "faithful", "believe", "believing"],
-  "patience": ["perseverance", "endurance", "steadfastness", "fortitude", "sabr", "patient", "endure"],
-  "guidance": ["direction", "hidayah", "leadership", "instruction", "guide", "guiding", "guided", "path"],
-  "charity": ["giving", "sadaqah", "zakat", "alms", "donation", "donate", "charitable", "generosity"],
-  
-  // Ethical concepts
-  "justice": ["fairness", "equity", "righteousness", "balance", "impartiality", "just", "fair", "adl"],
-  "truth": ["reality", "verity", "honesty", "fact", "genuineness", "true", "haqq"],
-  "kindness": ["compassion", "benevolence", "gentleness", "goodwill", "kind", "gentle", "ihsan"],
-  
-  // Challenges and spiritual states
-  "hardship": ["difficulty", "adversity", "trial", "suffering", "tribulation", "test", "challenge", "struggle"],
-  "ease": ["relief", "comfort", "facility", "convenience", "yusr", "relieved", "comfortable"],
-  "gratitude": ["thankfulness", "appreciation", "gratefulness", "shukr", "grateful", "thankful", "thank"],
-  
-  // Afterlife concepts
-  "paradise": ["heaven", "jannah", "garden", "bliss", "gardens", "eden"],
-  "hell": ["fire", "jahannam", "punishment", "torment", "hellfire", "naar"],
-  
-  // Prophets and figures
-  "muhammad": ["prophet", "messenger", "ahmad", "mohammed", "mohammed", "rasul", "nabi"],
-  "jesus": ["isa", "messiah", "christ"],
-  "moses": ["musa"],
-  "abraham": ["ibrahim", "ibrahim", "friend of allah"],
-  "noah": ["nuh"],
-  "mary": ["maryam", "mother of jesus"],
-  "joseph": ["yusuf"],
-  "jacob": ["yaqub"],
-  "adam": ["first man"],
-  "solomon": ["sulaiman"],
-  "david": ["dawud"],
-  
-  // Behavioral concepts
-  "modesty": ["humility", "shyness", "decency", "hayaa", "modest", "humble"],
-  "repentance": ["regret", "remorse", "contrition", "tawbah", "repent", "turning back"],
-  "hope": ["expectation", "aspiration", "optimism", "anticipation", "hopeful"],
-  
-  // Religious obligations
-  "fast": ["fasting", "sawm", "ramadan", "abstain"],
-  "pilgrimage": ["hajj", "umrah", "pilgrim", "mecca", "kaaba"],
-  
-  // Important Islamic concepts
-  "quran": ["book", "scripture", "revelation", "recitation", "verses", "ayat", "surahs"],
-  "islam": ["submission", "muslim", "muslims", "surrender", "peace"],
-  "sin": ["transgression", "disobedience", "error", "wrongdoing", "wrong"],
-  "angels": ["angel", "malak", "malaika", "gabriel", "jibreel", "mikail"],
-  "resurrection": ["afterlife", "hereafter", "akhirah", "last day", "judgment", "qiyamah"],
-  "worship": ["ibadah", "devotion", "adoration", "reverence", "serve", "serving"],
-  "trust": ["reliance", "tawakkul", "dependence", "rely", "tawakkul"],
-  "christian": ["christianity", "christians", "church", "jesus followers"],
-  "jew": ["judaism", "jewish", "jews", "children of israel", "israelites"]
+// A smaller core synonym map for essential Islamic/Quranic concepts 
+// This will supplement our more advanced matching techniques
+const coreSynonyms: Record<string, string[]> = {
+  "god": ["allah", "lord", "creator"],
+  "allah": ["god", "lord"],
+  "mercy": ["compassion", "forgiveness", "rahma", "rahman", "rahim"],
+  "prayer": ["salah", "worship", "salat"],
+  "quran": ["book", "scripture", "recitation"],
+  "prophet": ["messenger", "rasul", "nabi"]
 };
 
-// Function to get all possible search terms including synonyms
+// More advanced text normalization 
+const normalizeText = (text: string): string => {
+  return text
+    .toLowerCase()
+    // Remove common punctuation and diacritics
+    .replace(/[.,;:'"!?()-]/g, ' ')
+    // Convert multiple spaces to single
+    .replace(/\s+/g, ' ')
+    .trim();
+};
+
+// Function to get word roots (simple implementation)
+const getWordRoot = (word: string): string => {
+  const simpleSuffixes = ['ing', 'ed', 'es', 's', 'ers', 'er'];
+  let root = word.toLowerCase();
+  
+  // Only apply stemming to longer words (4+ characters)
+  if (root.length <= 3) return root;
+  
+  // Simple stemming
+  for (const suffix of simpleSuffixes) {
+    if (root.endsWith(suffix) && root.length - suffix.length >= 3) {
+      return root.slice(0, root.length - suffix.length);
+    }
+  }
+  
+  return root;
+};
+
+// Function to break text into tokens with roots
+const tokenizeText = (text: string): string[] => {
+  const normalized = normalizeText(text);
+  const words = normalized.split(/\s+/);
+  
+  // Get unique tokens including word roots
+  const tokens = new Set<string>();
+  
+  words.forEach(word => {
+    if (word.length > 1) {
+      tokens.add(word);
+      const root = getWordRoot(word);
+      if (root !== word) {
+        tokens.add(root);
+      }
+    }
+  });
+  
+  return Array.from(tokens);
+};
+
+// Get expanded search terms based on tokens and core synonyms
 export const expandSearchTerms = (query: string): string[] => {
-  // Normalize query and split into individual terms
-  const terms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
-  const expandedTerms = new Set<string>();
+  if (!query.trim()) return [];
   
-  // Add original terms
-  terms.forEach(term => expandedTerms.add(term));
+  const tokens = tokenizeText(query);
+  const expandedTerms = new Set<string>(tokens);
   
-  // Add synonyms for each term
-  terms.forEach(term => {
-    // Check for exact matches in the synonym map
-    if (synonymMap[term]) {
-      synonymMap[term].forEach(synonym => expandedTerms.add(synonym));
+  // Add core synonyms
+  tokens.forEach(token => {
+    // Check direct matches in core synonyms
+    if (coreSynonyms[token]) {
+      coreSynonyms[token].forEach(synonym => expandedTerms.add(synonym));
     }
     
-    // Check for partial matches in the synonym map keys
-    Object.keys(synonymMap).forEach(key => {
-      if (key.includes(term) || term.includes(key)) {
-        // Add this key and all its synonyms
+    // Check if token is in any synonym list
+    Object.entries(coreSynonyms).forEach(([key, synonyms]) => {
+      if (synonyms.includes(token)) {
         expandedTerms.add(key);
-        synonymMap[key].forEach(synonym => expandedTerms.add(synonym));
+        synonyms.forEach(s => expandedTerms.add(s));
       }
-    });
-    
-    // Check within synonym values for partial matches
-    Object.entries(synonymMap).forEach(([key, synonyms]) => {
-      synonyms.forEach(synonym => {
-        if (synonym.includes(term) || term.includes(synonym)) {
-          // Add this synonym, its key, and all related synonyms
-          expandedTerms.add(key);
-          expandedTerms.add(synonym);
-          synonymMap[key].forEach(s => expandedTerms.add(s));
-        }
-      });
     });
   });
   
   return Array.from(expandedTerms);
 };
 
-// Improved string matching that looks for partial and fuzzy matches
-const textContainsTerm = (text: string, term: string): boolean => {
-  const normalizedText = text.toLowerCase();
-  const normalizedTerm = term.toLowerCase();
+// Calculate token frequency in a text
+const getTokenFrequency = (tokens: string[], text: string): Map<string, number> => {
+  const frequencies = new Map<string, number>();
+  const normalizedText = normalizeText(text);
   
-  // Exact match
-  if (normalizedText.includes(normalizedTerm)) {
-    return true;
-  }
+  tokens.forEach(token => {
+    // Don't count very short tokens
+    if (token.length <= 2) return;
+    
+    // Basic token occurrence count
+    const regex = new RegExp(`\\b${token}\\b|${token}`, 'gi');
+    const matches = normalizedText.match(regex) || [];
+    frequencies.set(token, matches.length);
+  });
   
-  // Check for word boundaries
-  const wordBoundaryRegex = new RegExp(`\\b${normalizedTerm}\\b`, 'i');
-  if (wordBoundaryRegex.test(normalizedText)) {
-    return true;
-  }
-  
-  // For short terms (3 chars or less), require exact matches
-  if (normalizedTerm.length <= 3) {
-    return normalizedText.includes(normalizedTerm);
-  }
-  
-  // For longer terms, try stemming (simplified version - remove common endings)
-  const stemmed = normalizedTerm
-    .replace(/ing$|ed$|es$|s$/, '')
-    .replace(/ers$|er$/, '');
-  
-  if (stemmed !== normalizedTerm && normalizedText.includes(stemmed)) {
-    return true;
-  }
-  
-  // For terms longer than 5 chars, allow partial matching (beginning of words)
-  if (normalizedTerm.length > 5) {
-    const words = normalizedText.split(/\s+/);
-    return words.some(word => word.startsWith(normalizedTerm) || normalizedTerm.startsWith(word));
-  }
-  
-  return false;
+  return frequencies;
 };
 
-// Score a verse based on matching terms and synonym proximity
-export const scoreVerse = (verse: Verse, searchTerms: string[]): number => {
-  // Ensure we have a translation to search in
-  const text = verse.translation?.toLowerCase() || "";
+// Function to match a text against a search query with comprehensive analysis
+const matchTextToQuery = (text: string, searchTokens: string[]): number => {
+  if (!text || searchTokens.length === 0) return 0;
   
-  if (!text) return 0;
+  // Normalize and tokenize the text
+  const normalizedText = normalizeText(text);
+  const textTokens = tokenizeText(text);
   
+  // Prepare for TF-IDF style scoring (simplified)
+  const tokenFrequencies = getTokenFrequency(searchTokens, normalizedText);
   let score = 0;
-  const matchedTerms = new Set<string>();
   
-  // Check each search term
-  searchTerms.forEach(term => {
-    // Skip very short terms unless they're exact matches
-    if (term.length < 3 && !text.includes(` ${term} `)) {
-      return;
+  // Score based on token presence and frequency
+  searchTokens.forEach(token => {
+    const frequency = tokenFrequencies.get(token) || 0;
+    
+    // Skip tokens that don't appear
+    if (frequency === 0) return;
+    
+    // Base score for token presence
+    score += 5;
+    
+    // Additional points for higher frequency
+    score += Math.min(frequency * 2, 10);
+    
+    // Bonus for exact phrase matches
+    const phraseRegex = new RegExp(`\\b${token}\\b`, 'i');
+    if (phraseRegex.test(normalizedText)) {
+      score += 5;
     }
     
-    // Look for matches
-    if (textContainsTerm(text, term)) {
-      // Direct match gets higher score
-      score += 10;
-      matchedTerms.add(term);
-      
-      // Bonus points for exact matches (surrounded by word boundaries)
-      const exactMatchRegex = new RegExp(`\\b${term}\\b`, 'i');
-      if (exactMatchRegex.test(text)) {
-        score += 5;
-      }
-      
-      // Bonus for matches at the beginning of the verse
-      if (text.substring(0, 50).includes(term)) {
-        score += 3;
-      }
-      
-      // Count occurrences for multiple matches
-      const occurrences = (text.match(new RegExp(term, 'gi')) || []).length;
-      if (occurrences > 1) {
-        score += occurrences * 2;
-      }
+    // Bonus for matches at the beginning of the text
+    if (normalizedText.substring(0, 50).includes(token)) {
+      score += 3;
+    }
+    
+    // Bonus for longer token matches (more specific)
+    if (token.length > 4) {
+      score += 2;
     }
   });
   
-  // Boost score based on number of unique matched terms
-  if (matchedTerms.size > 1) {
-    score += matchedTerms.size * 5; // Bonus for matching multiple terms
-  }
-  
-  // Adjust score based on verse length
-  // Shorter verses with matches are often more relevant
+  // Check for multiple token matches (phrase relevance)
   if (score > 0) {
-    if (text.length < 100) {
-      score += 5;
-    } else if (text.length > 400) {
-      score -= 3; // Slightly penalize very long verses
+    const uniqueMatchedTokens = searchTokens.filter(token => tokenFrequencies.get(token) || 0 > 0);
+    // Boost score significantly when multiple tokens match
+    if (uniqueMatchedTokens.length > 1) {
+      score += uniqueMatchedTokens.length * 5;
+      
+      // Check for tokens appearing close together
+      let tokenProximityBonus = 0;
+      for (let i = 0; i < uniqueMatchedTokens.length; i++) {
+        for (let j = i + 1; j < uniqueMatchedTokens.length; j++) {
+          const indexA = normalizedText.indexOf(uniqueMatchedTokens[i]);
+          const indexB = normalizedText.indexOf(uniqueMatchedTokens[j]);
+          
+          if (indexA >= 0 && indexB >= 0) {
+            const distance = Math.abs(indexA - indexB);
+            // Tokens appearing within 20 characters of each other get a proximity bonus
+            if (distance < 20) {
+              tokenProximityBonus += 5;
+            }
+          }
+        }
+      }
+      score += tokenProximityBonus;
     }
   }
   
-  return score;
+  return Math.min(score, 100); // Cap score at 100
 };
 
-// Interface for a simple search result with score for ranking
+// Score a verse based on text matching with the query
+export const scoreVerse = (verse: Verse, searchTokens: string[]): number => {
+  if (!verse.translation) return 0;
+  
+  // Get match score for the translation
+  const score = matchTextToQuery(verse.translation, searchTokens);
+  
+  // Return 0 if below threshold to eliminate poor matches
+  return score < 10 ? 0 : score;
+};
+
+// Interface for search result with score
 export interface ScoredSearchResult extends Verse {
   score: number;
 }
 
-// Helper function to extract data from collection of verses for search
-export const prepareVersesForSearch = (verses: Verse[]): Verse[] => {
-  return verses.map(verse => ({
-    ...verse,
-    // Ensure the translation is usable for search
-    translation: verse.translation || ""
-  }));
-};
-
+// Main search function
 export const searchVerses = (verses: Verse[], query: string): Verse[] => {
-  // Return empty array for empty queries
-  if (!query.trim()) return [];
+  if (!query.trim() || !verses || verses.length === 0) return [];
   
-  const searchTerms = expandSearchTerms(query);
+  // Prepare search tokens from the query
+  const searchTokens = tokenizeText(query);
+  const expandedTokens = expandSearchTerms(query);
+  const allSearchTokens = Array.from(new Set([...searchTokens, ...expandedTokens]));
+  
+  // Skip very common or short search terms
+  const filteredTokens = allSearchTokens.filter(token => token.length > 2);
+  
+  // Log search information for debugging
+  console.log(`Searching for: "${query}"`);
+  console.log("Search tokens:", filteredTokens);
+  
+  // Score and filter verses
   const scoredResults: ScoredSearchResult[] = [];
   
-  // Check if we have verses to search
-  if (!verses || verses.length === 0) {
-    console.warn("No verses provided for search");
-    return [];
-  }
-  
-  // Score each verse
   verses.forEach(verse => {
-    const score = scoreVerse(verse, searchTerms);
+    if (!verse.translation) return;
+    
+    const score = scoreVerse(verse, filteredTokens);
     if (score > 0) {
       scoredResults.push({...verse, score});
     }
   });
   
-  // Debugging
-  console.log(`Search for "${query}" found ${scoredResults.length} results`);
-  console.log("Search terms:", searchTerms);
-  
-  // Log sample results for debugging
-  if (scoredResults.length > 0) {
-    console.log("Top 3 results with scores:");
-    scoredResults
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 3)
-      .forEach((result, idx) => {
-        console.log(`${idx+1}. Score ${result.score}: "${result.translation.substring(0, 100)}..."`);
-      });
-  }
-  
-  // Sort by score (highest first)
+  // Sort results by score (highest first)
   scoredResults.sort((a, b) => b.score - a.score);
   
-  // Return the sorted results without the score property
+  // Log results for debugging
+  console.log(`Found ${scoredResults.length} results`);
+  if (scoredResults.length > 0) {
+    console.log("Top 3 results:");
+    scoredResults.slice(0, 3).forEach((result, i) => {
+      console.log(`${i+1}. Score ${result.score}: "${result.translation.substring(0, 100)}..."`);
+    });
+  }
+  
+  // Return verses without score property
   return scoredResults.map(({score, ...verse}) => verse);
+};
+
+// Prepare verses for search by ensuring they have proper text fields
+export const prepareVersesForSearch = (verses: Verse[]): Verse[] => {
+  return verses.map(verse => ({
+    ...verse,
+    translation: verse.translation || ""
+  }));
 };

@@ -42,9 +42,9 @@ const Explore = () => {
       // Get expanded search terms for display
       const terms = expandSearchTerms(queryToUse);
       setExpandedTerms(terms);
+      console.log("Expanded terms:", terms);
       
-      // Use direct search on our sample data for now (for quicker implementation)
-      // In a real app, fetchSearchResults would call an API
+      // Use our improved search implementation
       const searchResults = searchVerses(extendedSampleVerses, queryToUse);
       
       console.log(`Search completed with ${searchResults.length} results`);
@@ -129,7 +129,7 @@ const Explore = () => {
           <div className="px-6">
             <div className="flex items-center gap-1 text-xs text-app-text-secondary">
               <Info className="h-3 w-3" />
-              <span>Also searching for related terms:</span>
+              <span>Search includes related terms:</span>
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {expandedTerms.slice(0, 10).map((term, i) => (
