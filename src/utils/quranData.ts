@@ -45,7 +45,7 @@ export const sampleVerse: Verse = {
   id: 1,
   surah: 7,
   ayah: 128,
-  arabic: "قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ",
+  arabic: "قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعاقِبَةُ لِلْمُتَّقِينَ",
   translation: "Moses reassured his people, \"Seek Allah's help and be patient. Indeed, the earth belongs to Allah (alone). He grants it to whoever He chooses of His servants. The ultimate outcome belongs (only) to the righteous.\""
 };
 
@@ -296,6 +296,71 @@ export const extendedSampleVerses: Verse[] = [
   }
 ];
 
+// Full Quran data cache
+let fullQuranData: Verse[] = [];
+
+// Function to fetch the full Quran text for search
+export const fetchFullQuranData = async (): Promise<Verse[]> => {
+  // If we already have the data cached, return it
+  if (fullQuranData.length > 0) {
+    return fullQuranData;
+  }
+
+  try {
+    // First, try to use the basic sample data in development
+    if (extendedSampleVerses.length > 0) {
+      console.log("Using extended sample verses for search");
+      return extendedSampleVerses;
+    }
+    
+    console.log("Fetching full Quran data for search...");
+    // In a real application, this would fetch from a proper API or database
+    // For now, we'll return our sample data
+    
+    // This is a placeholder - in a production app you would integrate with
+    // a full Quran API or database to get complete text
+    
+    // Sample implementation (commented out):
+    /*
+    // Fetch surahs first to get metadata
+    const surahsResponse = await fetch('https://api.quran.com/api/v4/chapters');
+    const surahsData = await surahsResponse.json();
+    const surahs = surahsData.chapters;
+    
+    const allVerses: Verse[] = [];
+    
+    // For each surah, fetch its verses
+    for (const surah of surahs) {
+      const versesResponse = await fetch(
+        `https://api.quran.com/api/v4/verses/by_chapter/${surah.id}?language=en&words=false&translations=131`
+      );
+      const versesData = await versesResponse.json();
+      
+      // Map to our format
+      const surahVerses = versesData.verses.map((v: any) => ({
+        id: v.id,
+        surah: surah.id,
+        ayah: v.verse_number,
+        arabic: v.text_uthmani,
+        translation: v.translations[0].text,
+        surahName: surah.name_simple,
+        totalVerses: surah.verses_count
+      }));
+      
+      allVerses.push(...surahVerses);
+    }
+    
+    fullQuranData = allVerses;
+    return allVerses;
+    */
+    
+    return extendedSampleVerses;
+  } catch (error) {
+    console.error("Error fetching full Quran data:", error);
+    return extendedSampleVerses; // Fallback to sample data
+  }
+};
+
 // Updated search functionality using the searchUtils
 import { searchVerses } from './searchUtils';
 
@@ -304,14 +369,14 @@ export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
   if (!query.trim()) return [];
   
   try {
-    // In a real app, we would connect to a proper search API
-    // For now, we'll use our enhanced search functionality with the sample verses
+    // Get the full Quran data for search
+    const fullData = await fetchFullQuranData();
     
     // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Use our improved search function
-    return searchVerses(extendedSampleVerses, query);
+    return searchVerses(fullData, query);
   } catch (error) {
     console.error("Error performing search:", error);
     return [];

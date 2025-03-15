@@ -6,9 +6,9 @@ import { Search, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
-import { fetchSearchResults, extendedSampleVerses } from "@/utils/quranData";
+import { fetchSearchResults, extendedSampleVerses, fetchFullQuranData } from "@/utils/quranData";
 import { Verse } from "@/utils/quranData";
-import { searchVerses, expandSearchTerms } from "@/utils/searchUtils";
+import { expandSearchTerms } from "@/utils/searchUtils";
 import { Input } from "@/components/ui/input";
 
 const Explore = () => {
@@ -17,12 +17,42 @@ const Explore = () => {
   const [results, setResults] = useState<Verse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const navigate = useNavigate();
   
-  // For debugging - run search on mount with a test query
+  // Initialize the search system
   useEffect(() => {
-    console.log("Explore component mounted, ready for search");
+    // Preload full Quran data for faster searches
+    const initializeSearch = async () => {
+      console.log("Initializing search system...");
+      try {
+        // This will cache the full Quran data for faster subsequent searches
+        await fetchFullQuranData();
+        console.log("Search system initialized");
+      } catch (error) {
+        console.error("Error initializing search:", error);
+      }
+    };
+    
+    initializeSearch();
+    
+    // Load recent searches from localStorage
+    const savedSearches = localStorage.getItem("recentSearches");
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
+    }
   }, []);
+  
+  // Save recent searches to localStorage
+  const addToRecentSearches = (searchQuery: string) => {
+    const updatedSearches = [
+      searchQuery,
+      ...recentSearches.filter(s => s !== searchQuery)
+    ].slice(0, 5); // Keep only the 5 most recent
+    
+    setRecentSearches(updatedSearches);
+    localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
+  };
   
   const handleSearch = async (searchQuery?: string) => {
     const queryToUse = searchQuery || query;
@@ -44,8 +74,8 @@ const Explore = () => {
       setExpandedTerms(terms);
       console.log("Expanded terms:", terms);
       
-      // Use our improved search implementation
-      const searchResults = searchVerses(extendedSampleVerses, queryToUse);
+      // Perform the search
+      const searchResults = await fetchSearchResults(queryToUse);
       
       console.log(`Search completed with ${searchResults.length} results`);
       if (searchResults.length > 0) {
@@ -53,6 +83,11 @@ const Explore = () => {
       }
       
       setResults(searchResults);
+      
+      // Add to recent searches
+      if (searchResults.length > 0) {
+        addToRecentSearches(queryToUse);
+      }
       
       if (searchResults.length === 0) {
         toast({
@@ -88,7 +123,7 @@ const Explore = () => {
     <div className="min-h-screen bg-app-background pb-20">
       <Header showBack={false} />
       
-      <main className="max-w-screen-md mx-auto space-y-8 py-4">
+      <main className="max-w-screen-md mx-auto space-y-6 py-4">
         <div className="px-6 flex items-center space-x-3">
           <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center">
             <Search className="h-6 w-6 text-white" />
@@ -122,6 +157,26 @@ const Explore = () => {
                 )}
               </button>
             </div>
+            
+            {recentSearches.length > 0 && !query.trim() && (
+              <div className="pt-2">
+                <p className="text-xs text-app-text-secondary mb-2">Recent searches:</p>
+                <div className="flex flex-wrap gap-2">
+                  {recentSearches.map((term, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setQuery(term);
+                        handleSearch(term);
+                      }}
+                      className="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-full text-xs text-app-text-secondary transition-colors"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
@@ -151,7 +206,7 @@ const Explore = () => {
             <h2 className="text-xl font-semibold text-white mb-4">
               Search Results ({results.length})
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-4">
               {results.map((result) => (
                 <div 
                   key={`${result.surah}-${result.ayah}`}
@@ -181,6 +236,31 @@ const Explore = () => {
               <p className="mt-2 text-sm opacity-70">
                 Try using different keywords or more general terms
               </p>
+            </div>
+          </div>
+        )}
+        
+        {!query && results.length === 0 && !isSearching && (
+          <div className="px-6 mt-8">
+            <div className="glass-card rounded-xl p-6 text-center">
+              <p className="text-white mb-4">Search Examples:</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  "mercy", "patience", "forgiveness", 
+                  "guidance", "prayer", "faith"
+                ].map((example, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      setQuery(example);
+                      handleSearch(example);
+                    }}
+                    className="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-app-text-secondary transition-colors"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

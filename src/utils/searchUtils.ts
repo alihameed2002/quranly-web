@@ -1,60 +1,57 @@
 
 import { Verse } from './quranData';
 
-// A smaller core synonym map for essential Islamic/Quranic concepts 
-// This will supplement our more advanced matching techniques
-const coreSynonyms: Record<string, string[]> = {
-  "god": ["allah", "lord", "creator"],
-  "allah": ["god", "lord"],
-  "mercy": ["compassion", "forgiveness", "rahma", "rahman", "rahim"],
-  "prayer": ["salah", "worship", "salat"],
-  "quran": ["book", "scripture", "recitation"],
-  "prophet": ["messenger", "rasul", "nabi"]
-};
-
-// More advanced text normalization 
+// More sophisticated text normalization for better matching
 const normalizeText = (text: string): string => {
   return text
     .toLowerCase()
     // Remove common punctuation and diacritics
     .replace(/[.,;:'"!?()-]/g, ' ')
-    // Convert multiple spaces to single
+    // Normalize whitespace
     .replace(/\s+/g, ' ')
     .trim();
 };
 
-// Function to get word roots (simple implementation)
-const getWordRoot = (word: string): string => {
-  const simpleSuffixes = ['ing', 'ed', 'es', 's', 'ers', 'er'];
-  let root = word.toLowerCase();
+// Advanced word stemming algorithm (Porter-like simplified stemming)
+const stemWord = (word: string): string => {
+  if (word.length < 4) return word;
   
-  // Only apply stemming to longer words (4+ characters)
-  if (root.length <= 3) return root;
+  let stem = word.toLowerCase();
   
-  // Simple stemming
-  for (const suffix of simpleSuffixes) {
-    if (root.endsWith(suffix) && root.length - suffix.length >= 3) {
-      return root.slice(0, root.length - suffix.length);
+  // Handle common plurals and verb forms
+  if (stem.endsWith('ies') && stem.length > 4) {
+    return stem.slice(0, -3) + 'y';
+  } else if (stem.endsWith('es') && stem.length > 3) {
+    return stem.slice(0, -2);
+  } else if (stem.endsWith('s') && !stem.endsWith('ss') && stem.length > 3) {
+    return stem.slice(0, -1);
+  }
+  
+  // Handle common suffixes
+  const suffixes = ['ing', 'ed', 'ly', 'ment', 'ness', 'ity', 'tion', 'ation', 'ible', 'able'];
+  for (const suffix of suffixes) {
+    if (stem.endsWith(suffix) && stem.length - suffix.length >= 3) {
+      return stem.slice(0, stem.length - suffix.length);
     }
   }
   
-  return root;
+  return stem;
 };
 
-// Function to break text into tokens with roots
+// Tokenize text into words and their stems
 const tokenizeText = (text: string): string[] => {
   const normalized = normalizeText(text);
   const words = normalized.split(/\s+/);
   
-  // Get unique tokens including word roots
+  // Get unique tokens including word stems
   const tokens = new Set<string>();
   
   words.forEach(word => {
     if (word.length > 1) {
       tokens.add(word);
-      const root = getWordRoot(word);
-      if (root !== word) {
-        tokens.add(root);
+      const stem = stemWord(word);
+      if (stem !== word) {
+        tokens.add(stem);
       }
     }
   });
@@ -62,131 +59,139 @@ const tokenizeText = (text: string): string[] => {
   return Array.from(tokens);
 };
 
-// Get expanded search terms based on tokens and core synonyms
+// Calculate fuzzy match score between a token and text
+const calculateFuzzyMatchScore = (token: string, text: string): number => {
+  if (!token || !text || token.length < 2) return 0;
+  
+  const normalizedText = normalizeText(text);
+  const normalizedToken = normalizeText(token);
+  
+  // Exact match gets highest score
+  if (normalizedText.includes(` ${normalizedToken} `)) {
+    return 10;
+  }
+  
+  // Beginning or end of text match
+  if (normalizedText.startsWith(normalizedToken + ' ') || 
+      normalizedText.endsWith(' ' + normalizedToken)) {
+    return 8;
+  }
+  
+  // Partial word match
+  if (normalizedText.includes(normalizedToken)) {
+    return 6;
+  }
+  
+  // Stem matching
+  const textTokens = tokenizeText(normalizedText);
+  const tokenStem = stemWord(normalizedToken);
+  
+  if (textTokens.some(t => stemWord(t) === tokenStem)) {
+    return 5;
+  }
+  
+  // Character-level fuzzy match for short tokens (detect typos and similar words)
+  if (token.length >= 4) {
+    const words = normalizedText.split(/\s+/);
+    for (const word of words) {
+      if (word.length >= 4) {
+        let commonChars = 0;
+        for (let i = 0; i < token.length - 1; i++) {
+          if (word.includes(token.substring(i, i + 2))) {
+            commonChars++;
+          }
+        }
+        
+        const matchRatio = commonChars / (token.length - 1);
+        if (matchRatio > 0.5) {
+          return Math.floor(matchRatio * 4);
+        }
+      }
+    }
+  }
+  
+  return 0;
+};
+
+// Get expanded search terms based on stemming
 export const expandSearchTerms = (query: string): string[] => {
   if (!query.trim()) return [];
   
   const tokens = tokenizeText(query);
-  const expandedTerms = new Set<string>(tokens);
   
-  // Add core synonyms
+  // Deduplicate stems
+  const uniqueTerms = new Set<string>(tokens);
+  
+  // For each token, add its stem if not already present
   tokens.forEach(token => {
-    // Check direct matches in core synonyms
-    if (coreSynonyms[token]) {
-      coreSynonyms[token].forEach(synonym => expandedTerms.add(synonym));
-    }
-    
-    // Check if token is in any synonym list
-    Object.entries(coreSynonyms).forEach(([key, synonyms]) => {
-      if (synonyms.includes(token)) {
-        expandedTerms.add(key);
-        synonyms.forEach(s => expandedTerms.add(s));
-      }
-    });
-  });
-  
-  return Array.from(expandedTerms);
-};
-
-// Calculate token frequency in a text
-const getTokenFrequency = (tokens: string[], text: string): Map<string, number> => {
-  const frequencies = new Map<string, number>();
-  const normalizedText = normalizeText(text);
-  
-  tokens.forEach(token => {
-    // Don't count very short tokens
-    if (token.length <= 2) return;
-    
-    // Basic token occurrence count
-    const regex = new RegExp(`\\b${token}\\b|${token}`, 'gi');
-    const matches = normalizedText.match(regex) || [];
-    frequencies.set(token, matches.length);
-  });
-  
-  return frequencies;
-};
-
-// Function to match a text against a search query with comprehensive analysis
-const matchTextToQuery = (text: string, searchTokens: string[]): number => {
-  if (!text || searchTokens.length === 0) return 0;
-  
-  // Normalize and tokenize the text
-  const normalizedText = normalizeText(text);
-  const textTokens = tokenizeText(text);
-  
-  // Prepare for TF-IDF style scoring (simplified)
-  const tokenFrequencies = getTokenFrequency(searchTokens, normalizedText);
-  let score = 0;
-  
-  // Score based on token presence and frequency
-  searchTokens.forEach(token => {
-    const frequency = tokenFrequencies.get(token) || 0;
-    
-    // Skip tokens that don't appear
-    if (frequency === 0) return;
-    
-    // Base score for token presence
-    score += 5;
-    
-    // Additional points for higher frequency
-    score += Math.min(frequency * 2, 10);
-    
-    // Bonus for exact phrase matches
-    const phraseRegex = new RegExp(`\\b${token}\\b`, 'i');
-    if (phraseRegex.test(normalizedText)) {
-      score += 5;
-    }
-    
-    // Bonus for matches at the beginning of the text
-    if (normalizedText.substring(0, 50).includes(token)) {
-      score += 3;
-    }
-    
-    // Bonus for longer token matches (more specific)
-    if (token.length > 4) {
-      score += 2;
+    const stem = stemWord(token);
+    if (stem !== token) {
+      uniqueTerms.add(stem);
     }
   });
   
-  // Check for multiple token matches (phrase relevance)
-  if (score > 0) {
-    const uniqueMatchedTokens = searchTokens.filter(token => tokenFrequencies.get(token) || 0 > 0);
-    // Boost score significantly when multiple tokens match
-    if (uniqueMatchedTokens.length > 1) {
-      score += uniqueMatchedTokens.length * 5;
-      
-      // Check for tokens appearing close together
-      let tokenProximityBonus = 0;
-      for (let i = 0; i < uniqueMatchedTokens.length; i++) {
-        for (let j = i + 1; j < uniqueMatchedTokens.length; j++) {
-          const indexA = normalizedText.indexOf(uniqueMatchedTokens[i]);
-          const indexB = normalizedText.indexOf(uniqueMatchedTokens[j]);
-          
-          if (indexA >= 0 && indexB >= 0) {
-            const distance = Math.abs(indexA - indexB);
-            // Tokens appearing within 20 characters of each other get a proximity bonus
-            if (distance < 20) {
-              tokenProximityBonus += 5;
-            }
-          }
-        }
-      }
-      score += tokenProximityBonus;
-    }
-  }
-  
-  return Math.min(score, 100); // Cap score at 100
+  return Array.from(uniqueTerms);
 };
 
-// Score a verse based on text matching with the query
+// Score a verse based on comprehensive text matching with the query
 export const scoreVerse = (verse: Verse, searchTokens: string[]): number => {
   if (!verse.translation) return 0;
   
-  // Get match score for the translation
-  const score = matchTextToQuery(verse.translation, searchTokens);
+  const verseText = verse.translation;
+  let score = 0;
+  let matchedTokens = 0;
   
-  // Return 0 if below threshold to eliminate poor matches
-  return score < 10 ? 0 : score;
+  // Score each search token against the verse text
+  for (const token of searchTokens) {
+    const tokenScore = calculateFuzzyMatchScore(token, verseText);
+    
+    if (tokenScore > 0) {
+      matchedTokens++;
+      score += tokenScore;
+      
+      // Bonus for longer token matches (more specific)
+      if (token.length > 4) {
+        score += token.length / 2;
+      }
+    }
+  }
+  
+  // Bonus for matching multiple tokens (more relevant matches)
+  if (matchedTokens > 1) {
+    score += matchedTokens * 5;
+    
+    // Check for phrase matches (tokens appearing close together)
+    const normalizedText = normalizeText(verseText);
+    let phraseBonus = 0;
+    
+    // Check pairs of matched tokens for proximity
+    const matchedTokensList = searchTokens.filter(token => 
+      calculateFuzzyMatchScore(token, verseText) > 0);
+    
+    for (let i = 0; i < matchedTokensList.length; i++) {
+      for (let j = i + 1; j < matchedTokensList.length; j++) {
+        const token1 = matchedTokensList[i];
+        const token2 = matchedTokensList[j];
+        
+        // Find positions of both tokens in the text
+        const pos1 = normalizedText.indexOf(token1);
+        const pos2 = normalizedText.indexOf(token2);
+        
+        if (pos1 >= 0 && pos2 >= 0) {
+          const distance = Math.abs(pos1 - pos2);
+          // Tokens appearing close together get a proximity bonus
+          if (distance < 30) {
+            phraseBonus += Math.max(10 - Math.floor(distance / 3), 0);
+          }
+        }
+      }
+    }
+    
+    score += phraseBonus;
+  }
+  
+  // Apply a threshold to eliminate poor matches
+  return score < 5 ? 0 : Math.min(score, 100);
 };
 
 // Interface for search result with score
@@ -200,11 +205,14 @@ export const searchVerses = (verses: Verse[], query: string): Verse[] => {
   
   // Prepare search tokens from the query
   const searchTokens = tokenizeText(query);
-  const expandedTokens = expandSearchTerms(query);
-  const allSearchTokens = Array.from(new Set([...searchTokens, ...expandedTokens]));
   
   // Skip very common or short search terms
-  const filteredTokens = allSearchTokens.filter(token => token.length > 2);
+  const filteredTokens = searchTokens.filter(token => token.length > 2);
+  
+  if (filteredTokens.length === 0) {
+    // Fall back to original tokens if all were filtered
+    filteredTokens.push(...searchTokens);
+  }
   
   // Log search information for debugging
   console.log(`Searching for: "${query}"`);
