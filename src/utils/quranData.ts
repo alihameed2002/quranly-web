@@ -236,7 +236,10 @@ export const fetchFullQuranData = async (): Promise<Verse[]> => {
   return quranDataLoadPromise;
 };
 
-// Improved search function with better error handling
+// Updated search functionality using the searchUtils
+import { searchVerses, prepareVersesForSearch } from './searchUtils';
+
+// Search functionality
 export const fetchSearchResults = async (query: string, maxResults = 100): Promise<Verse[]> => {
   if (!query.trim()) return [];
   
@@ -251,9 +254,6 @@ export const fetchSearchResults = async (query: string, maxResults = 100): Promi
     }
     
     console.log(`Searching through ${fullData.length} verses`);
-    
-    // Use the improved search algorithm from searchUtils
-    const { searchVerses, prepareVersesForSearch } = await import('./searchUtils');
     
     // Ensure all verses have valid translations for search
     const preparedVerses = prepareVersesForSearch(fullData);
@@ -418,25 +418,3 @@ export const extendedSampleVerses: Verse[] = [
     totalVerses: 3
   }
 ];
-
-// Updated search functionality using the searchUtils
-import { searchVerses } from './searchUtils';
-
-// Search functionality
-export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
-  if (!query.trim()) return [];
-  
-  try {
-    // Get the full Quran data for search
-    const fullData = await fetchFullQuranData();
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Use our improved search function
-    return searchVerses(fullData, query);
-  } catch (error) {
-    console.error("Error performing search:", error);
-    return [];
-  }
-};
