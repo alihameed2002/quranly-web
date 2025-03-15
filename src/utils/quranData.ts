@@ -148,20 +148,61 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
   }
 };
 
-// Improved full Quran data cache with a better data structure
+// Improved full Quran data cache with efficient data structure
 let fullQuranData: Verse[] = [];
 let isQuranDataLoading = false;
 let quranDataLoadPromise: Promise<Verse[]> | null = null;
+let lastDataLoad: number = 0;
+const DATA_CACHE_LIFETIME = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
+
+// Efficient full Quran data loading using static JSON
+const fetchStaticQuranData = async (): Promise<Verse[]> => {
+  try {
+    // Using a publicly available Quran translations API
+    const response = await fetch('https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_en.json');
+    const data = await response.json();
+    
+    const verses: Verse[] = [];
+    
+    // Process the data into our format
+    data.forEach((surah: any) => {
+      const surahNumber = surah.number;
+      const surahName = surah.englishName || surah.name;
+      const totalVerses = surah.numberOfAyahs || surah.verses.length;
+      
+      surah.verses.forEach((verse: any, index: number) => {
+        verses.push({
+          id: (surahNumber * 1000) + (index + 1),
+          surah: surahNumber,
+          ayah: index + 1,
+          arabic: verse.arabic || "",
+          translation: verse.translation || verse.text || "",
+          surahName: surahName,
+          totalVerses: totalVerses
+        });
+      });
+    });
+    
+    console.log(`Loaded ${verses.length} verses from static JSON`);
+    return verses;
+  } catch (error) {
+    console.error("Error loading static Quran data:", error);
+    throw error;
+  }
+};
 
 // Function to fetch the full Quran text for search with proper caching
 export const fetchFullQuranData = async (): Promise<Verse[]> => {
-  // If we already have the data cached, return it immediately
-  if (fullQuranData.length > 0) {
+  // If we already have valid cached data, return it immediately
+  const now = Date.now();
+  if (fullQuranData.length > 0 && (now - lastDataLoad) < DATA_CACHE_LIFETIME) {
+    console.log("Using cached Quran data");
     return fullQuranData;
   }
 
   // If a fetch is already in progress, return the existing promise
-  if (quranDataLoadPromise) {
+  if (isQuranDataLoading && quranDataLoadPromise) {
+    console.log("Quran data load in progress, returning existing promise");
     return quranDataLoadPromise;
   }
 
@@ -172,52 +213,65 @@ export const fetchFullQuranData = async (): Promise<Verse[]> => {
   // Create and store the promise for potential concurrent requests
   quranDataLoadPromise = new Promise<Verse[]>(async (resolve) => {
     try {
-      // In development/testing, use the sample data first
-      if (process.env.NODE_ENV === 'development' && extendedSampleVerses.length > 0) {
-        console.log("Using extended sample verses for search");
-        fullQuranData = extendedSampleVerses;
-        return resolve(fullQuranData);
-      }
+      // First try to fetch from the static JSON source
+      let verses: Verse[] = [];
       
-      // In a production environment, fetch from the Quran.com API
-      const verses: Verse[] = [];
-      
-      // First get all surahs
-      const surahs = await fetchSurahs();
-      
-      // Then fetch verses for each surah
-      for (const surah of surahs) {
-        try {
-          // We're using the alquran.cloud API
-          const response = await fetch(`https://api.alquran.cloud/v1/surah/${surah.id}/en.sahih`);
-          const data = await response.json();
+      try {
+        verses = await fetchStaticQuranData();
+      } catch (staticError) {
+        console.warn("Static data fetch failed, falling back to API:", staticError);
+        
+        // If static JSON fails, fallback to fetching from API
+        const surahs = await fetchSurahs();
+        
+        // Process surahs in batches to avoid overwhelming the API
+        const BATCH_SIZE = 10;
+        for (let i = 0; i < surahs.length; i += BATCH_SIZE) {
+          const batch = surahs.slice(i, i + BATCH_SIZE);
           
-          if (data.code === 200 && data.data && data.data.ayahs) {
-            // Map API response to our Verse format
-            const surahVerses = data.data.ayahs.map((ayah: any, index: number) => ({
-              id: (surah.id * 1000) + (index + 1), // Generate a unique ID
-              surah: surah.id,
-              ayah: index + 1,
-              arabic: "", // We'll fetch the Arabic text separately if needed
-              translation: ayah.text,
-              surahName: surah.englishName,
-              totalVerses: surah.numberOfAyahs
-            }));
-            
+          // Process batch in parallel
+          const batchPromises = batch.map(async (surah) => {
+            try {
+              const response = await fetch(`https://api.alquran.cloud/v1/surah/${surah.id}/en.sahih`);
+              const data = await response.json();
+              
+              if (data.code === 200 && data.data && data.data.ayahs) {
+                return data.data.ayahs.map((ayah: any, index: number) => ({
+                  id: (surah.id * 1000) + (index + 1),
+                  surah: surah.id,
+                  ayah: index + 1,
+                  arabic: "", // We'll fetch Arabic text separately if needed
+                  translation: ayah.text,
+                  surahName: surah.englishName,
+                  totalVerses: surah.numberOfAyahs
+                }));
+              }
+              return [];
+            } catch (error) {
+              console.error(`Error fetching verses for Surah ${surah.id}:`, error);
+              return [];
+            }
+          });
+          
+          const batchResults = await Promise.all(batchPromises);
+          batchResults.forEach(surahVerses => {
             verses.push(...surahVerses);
-            console.log(`Fetched ${surahVerses.length} verses from Surah ${surah.englishName}`);
-          }
-        } catch (error) {
-          console.error(`Error fetching verses for Surah ${surah.id}:`, error);
+          });
+          
+          console.log(`Loaded ${verses.length} verses so far (processed ${i + batch.length} of ${surahs.length} surahs)`);
+          
+          // Small delay between batches to avoid rate limiting
+          await new Promise(r => setTimeout(r, 500));
         }
       }
       
       if (verses.length > 0) {
         fullQuranData = verses;
+        lastDataLoad = Date.now();
         console.log(`Loaded ${verses.length} verses for search`);
       } else {
-        // Fallback to sample data if API fails
-        console.warn("API fetch failed, using sample data instead");
+        // Fallback to sample data if both methods fail
+        console.warn("All data fetch methods failed, using sample data instead");
         fullQuranData = extendedSampleVerses;
       }
       

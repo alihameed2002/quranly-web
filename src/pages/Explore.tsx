@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
-import { Search, Info, Loader2 } from "lucide-react";
+import { Search, Info, Loader2, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,7 @@ import { Verse } from "@/utils/quranData";
 import { expandSearchTerms } from "@/utils/searchUtils";
 import { Input } from "@/components/ui/input";
 import debounce from 'lodash/debounce';
+import { Progress } from "@/components/ui/progress";
 
 const Explore = () => {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ const Explore = () => {
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [totalVerses, setTotalVerses] = useState<number>(0);
+  const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const navigate = useNavigate();
   
   // Initialize the search system
@@ -29,17 +31,35 @@ const Explore = () => {
     const initializeSearch = async () => {
       console.log("Initializing search system...");
       setIsInitializing(true);
+      setLoadingProgress(10); // Show initial progress
       
       try {
+        // Set up progress updates
+        const progressInterval = setInterval(() => {
+          setLoadingProgress(prev => {
+            // Slowly increase progress until 90% to indicate work is happening
+            if (prev < 90) return prev + (90 - prev) * 0.1;
+            return prev;
+          });
+        }, 1000);
+        
         // This will cache the full Quran data for faster subsequent searches
         const verses = await fetchFullQuranData();
+        clearInterval(progressInterval);
+        
         setTotalVerses(verses.length);
+        setLoadingProgress(100); // Complete the progress
         console.log(`Search system initialized with ${verses.length} verses`);
         
         toast({
           title: "Search Ready",
-          description: `Loaded ${verses.length} verses for search`,
+          description: `Loaded ${verses.length.toLocaleString()} verses for search`,
         });
+        
+        // Add small delay before removing the progress indicator
+        setTimeout(() => {
+          setIsInitializing(false);
+        }, 500);
       } catch (error) {
         console.error("Error initializing search:", error);
         toast({
@@ -47,7 +67,6 @@ const Explore = () => {
           description: "Using limited dataset for search. Some results may be missing.",
           variant: "destructive",
         });
-      } finally {
         setIsInitializing(false);
       }
     };
@@ -170,13 +189,31 @@ const Explore = () => {
             <h1 className="text-2xl font-semibold text-white">Explore Quran</h1>
             <p className="text-app-text-secondary">
               {isInitializing 
-                ? "Loading search database..." 
+                ? `Loading search database (${Math.round(loadingProgress)}%)...` 
                 : totalVerses > 0 
-                  ? `Search across ${totalVerses} verses` 
+                  ? `Search across ${totalVerses.toLocaleString()} verses` 
                   : "Search for verses by keyword"}
             </p>
           </div>
         </div>
+        
+        {isInitializing && (
+          <div className="px-6">
+            <div className="glass-card rounded-xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Database className="h-4 w-4 text-app-green" />
+                <span className="text-sm font-medium text-white">Loading Quran database</span>
+              </div>
+              <Progress 
+                value={loadingProgress} 
+                className="h-2 bg-white/10" 
+              />
+              <p className="text-xs mt-2 text-app-text-secondary">
+                Loading all 114 chapters for comprehensive search. This might take a moment...
+              </p>
+            </div>
+          </div>
+        )}
         
         <div className="px-6">
           <div className="glass-card rounded-xl p-4 space-y-4">
@@ -202,13 +239,6 @@ const Explore = () => {
                 )}
               </button>
             </div>
-            
-            {isInitializing && (
-              <div className="flex items-center justify-center gap-2 py-2 text-app-text-secondary">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading search database...</span>
-              </div>
-            )}
             
             {recentSearches.length > 0 && !query.trim() && !isInitializing && (
               <div className="pt-2">
