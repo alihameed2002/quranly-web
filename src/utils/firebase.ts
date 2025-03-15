@@ -4,9 +4,9 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOu
 import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 
 // Firebase configuration
-// For security, we're using environment variables or placeholders
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyBa_5AM-MqJtvdxJvBX9UW2PRIvZvv-WAA", // Updated with a valid API key
+  apiKey: "AIzaSyA00mfqYOgOx9kRcyB65tqwPw9N1Hoy_-A",
   authDomain: "quran-app-demo.firebaseapp.com",
   projectId: "quran-app-demo",
   storageBucket: "quran-app-demo.appspot.com",
