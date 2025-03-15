@@ -2,9 +2,10 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
-import { sampleVerse, sampleSurah } from "@/utils/quranData";
+import { fetchQuranData, fetchSurahs } from "@/utils/quranData";
 import { useProgress } from "@/hooks/useProgress";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuranReaderProps {
   className?: string;
@@ -12,53 +13,100 @@ interface QuranReaderProps {
 
 export default function QuranReader({ className }: QuranReaderProps) {
   const { markVerseAsRead } = useProgress();
-  const [verse, setVerse] = useState(sampleVerse);
-  const [currentVerseNumber, setCurrentVerseNumber] = useState(sampleVerse.ayah);
-  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
+  const [currentVerseNumber, setCurrentVerseNumber] = useState(128); // Default to the sample verse
+  const [surahData, setSurahData] = useState(null);
+  const [verseData, setVerseData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Load verse data when component mounts or when current verse changes
+  useEffect(() => {
+    const loadVerseData = async () => {
+      setIsLoading(true);
+      try {
+        const { surah, verse } = await fetchQuranData(currentSurah, currentVerseNumber);
+        setSurahData(surah);
+        setVerseData(verse);
+      } catch (error) {
+        console.error("Failed to load verse data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load the Quran data. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadVerseData();
+  }, [currentSurah, currentVerseNumber, toast]);
   
   const goToNextVerse = () => {
-    setIsLoading(true);
+    if (isLoading || !surahData) return;
     
-    // In a real app, we would fetch the next verse from an API
-    // For demo purposes, we'll simulate loading and use the same verse
-    setTimeout(() => {
-      markVerseAsRead(verse.surah, verse.ayah);
+    if (currentVerseNumber < surahData.numberOfAyahs) {
+      // Go to next verse in the same surah
       setCurrentVerseNumber(prev => prev + 1);
-      setIsLoading(false);
-    }, 500);
+      markVerseAsRead(currentSurah, currentVerseNumber);
+    } else if (currentSurah < 114) {
+      // Go to first verse of next surah
+      setCurrentSurah(prev => prev + 1);
+      setCurrentVerseNumber(1);
+      markVerseAsRead(currentSurah, currentVerseNumber);
+    } else {
+      // End of Quran
+      toast({
+        title: "End of Quran",
+        description: "You have reached the end of the Quran.",
+      });
+    }
   };
   
   const goToPrevVerse = () => {
-    if (currentVerseNumber <= 1) return;
+    if (isLoading || currentVerseNumber <= 1 && currentSurah <= 1) return;
     
-    setIsLoading(true);
-    
-    // In a real app, we would fetch the previous verse from an API
-    // For demo purposes, we'll simulate loading and use the same verse
-    setTimeout(() => {
-      setCurrentVerseNumber(prev => Math.max(prev - 1, 1));
-      setIsLoading(false);
-    }, 500);
+    if (currentVerseNumber > 1) {
+      // Go to previous verse in the same surah
+      setCurrentVerseNumber(prev => prev - 1);
+    } else if (currentSurah > 1) {
+      // Need to fetch the previous surah to know its number of verses
+      fetchSurah(currentSurah - 1).then(prevSurah => {
+        setCurrentSurah(prev => prev - 1);
+        setCurrentVerseNumber(prevSurah.numberOfAyahs);
+      });
+    }
   };
+  
+  if (isLoading && !verseData) {
+    return (
+      <div className="w-full flex justify-center items-center h-64">
+        <div className="h-10 w-10 border-4 border-app-green border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
   
   return (
     <div className={cn("w-full space-y-6 pb-24", className)}>
-      <VerseCard 
-        surahName={sampleSurah.englishName}
-        surahNumber={sampleSurah.id}
-        verseNumber={currentVerseNumber}
-        totalVerses={sampleSurah.numberOfAyahs}
-        arabicText={verse.arabic}
-        translation={verse.translation}
-      />
+      {verseData && surahData && (
+        <VerseCard 
+          surahName={surahData.englishName}
+          surahNumber={surahData.id}
+          verseNumber={verseData.ayah}
+          totalVerses={surahData.numberOfAyahs}
+          arabicText={verseData.arabic}
+          translation={verseData.translation}
+        />
+      )}
       
       <div className="w-full flex items-center justify-between px-6">
         <button 
           onClick={goToPrevVerse}
-          disabled={currentVerseNumber <= 1 || isLoading}
+          disabled={isLoading || (currentVerseNumber <= 1 && currentSurah <= 1)}
           className={cn(
             "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
-            currentVerseNumber > 1 && !isLoading ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
+            !isLoading && !(currentVerseNumber <= 1 && currentSurah <= 1) ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
           )}
         >
           <ChevronLeft className="h-6 w-6 text-white mr-2" />
