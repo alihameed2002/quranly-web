@@ -142,6 +142,12 @@ export default function QuranReader({
   };
   
   const returnToSearchResults = () => {
+    console.log("Returning to search results with:", {
+      query: searchQuery,
+      resultsCount: searchResults.length,
+      scrollPosition
+    });
+    
     navigate('/explore', { 
       state: { 
         preserveSearch: true,

@@ -120,17 +120,25 @@ const Explore = () => {
     }
     
     const { state } = location;
-    if (state?.preserveSearch && state?.lastQuery) {
-      setQuery(state.lastQuery);
-      if (state.results) {
-        setResults(state.results);
-        setIsInitializing(false);
+    if (state?.preserveSearch) {
+      console.log("Restoring search state:", state);
+      
+      if (state.lastQuery) {
+        setQuery(state.lastQuery);
       }
+      
+      if (state.results && state.results.length > 0) {
+        console.log(`Restoring ${state.results.length} search results`);
+        setResults(state.results);
+      }
+      
+      setIsInitializing(false);
     }
   }, [toast, location]);
   
   useEffect(() => {
     if (location.state?.scrollPosition && resultsContainerRef.current) {
+      console.log("Restoring scroll position:", location.state.scrollPosition);
       setTimeout(() => {
         window.scrollTo(0, location.state.scrollPosition);
       }, 100);
