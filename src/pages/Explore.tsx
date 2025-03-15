@@ -1,12 +1,15 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
-import { fetchSearchResults } from "@/utils/quranData";
+import { fetchSearchResults, extendedSampleVerses } from "@/utils/quranData";
 import { Verse } from "@/utils/quranData";
+import { searchVerses } from "@/utils/searchUtils";
+import { Input } from "@/components/ui/input";
 
 const Explore = () => {
   const { toast } = useToast();
@@ -15,8 +18,17 @@ const Explore = () => {
   const [isSearching, setIsSearching] = useState(false);
   const navigate = useNavigate();
   
-  const handleSearch = async () => {
-    if (!query.trim()) {
+  // For debugging - run search on mount with a test query
+  useEffect(() => {
+    // Uncomment to test search on mount
+    // handleSearch("mercy");
+    console.log("Explore component mounted, ready for search");
+  }, []);
+  
+  const handleSearch = async (searchQuery?: string) => {
+    const queryToUse = searchQuery || query;
+    
+    if (!queryToUse.trim()) {
       toast({
         title: "Search query is empty",
         description: "Please enter a keyword to search for",
@@ -25,21 +37,27 @@ const Explore = () => {
     }
     
     setIsSearching(true);
+    console.log(`Searching for: "${queryToUse}"`);
+    
     try {
-      // Use the enhanced search functionality
-      const searchResults = await fetchSearchResults(query);
+      // Use direct search on our sample data for now (for quicker implementation)
+      // In a real app, fetchSearchResults would call an API
+      const searchResults = searchVerses(extendedSampleVerses, queryToUse);
+      
+      console.log(`Search completed with ${searchResults.length} results`);
+      console.log("First result:", searchResults[0]);
       
       setResults(searchResults);
       
       if (searchResults.length === 0) {
         toast({
           title: "No results found",
-          description: `No verses found for "${query}"`,
+          description: `No verses found for "${queryToUse}"`,
         });
       } else {
         toast({
           title: "Search completed",
-          description: `Found ${searchResults.length} results for "${query}"`,
+          description: `Found ${searchResults.length} results for "${queryToUse}"`,
         });
       }
     } catch (error) {
@@ -72,7 +90,7 @@ const Explore = () => {
         <div className="px-6">
           <div className="glass-card rounded-xl p-4 space-y-4">
             <div className="relative">
-              <input
+              <Input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -81,7 +99,7 @@ const Explore = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <button 
-                onClick={handleSearch}
+                onClick={() => handleSearch()}
                 disabled={isSearching}
                 className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full flex items-center justify-center bg-app-green text-app-background-dark hover:bg-app-green-light transition-all duration-300"
               >
@@ -101,7 +119,7 @@ const Explore = () => {
             <div className="space-y-6">
               {results.map((result) => (
                 <div 
-                  key={result.id} 
+                  key={`${result.surah}-${result.ayah}`}
                   className="glass-card rounded-xl p-4 cursor-pointer hover:bg-white/5 transition-colors"
                   onClick={() => navigate(`/reading?surah=${result.surah}&verse=${result.ayah}`)}
                 >

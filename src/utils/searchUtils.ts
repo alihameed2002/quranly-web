@@ -46,6 +46,7 @@ const synonymMap: Record<string, string[]> = {
 
 // Function to get all possible search terms including synonyms
 export const expandSearchTerms = (query: string): string[] => {
+  // Normalize query and split into individual terms
   const terms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
   const expandedTerms = new Set<string>();
   
@@ -62,22 +63,39 @@ export const expandSearchTerms = (query: string): string[] => {
   return Array.from(expandedTerms);
 };
 
+// Simple string matching that looks for partial matches
+const textContainsTerm = (text: string, term: string): boolean => {
+  return text.toLowerCase().includes(term.toLowerCase());
+};
+
 // Score a verse based on matching terms and synonym proximity
 export const scoreVerse = (verse: Verse, searchTerms: string[]): number => {
-  const text = verse.translation.toLowerCase();
+  // Ensure we have a translation to search in
+  const text = verse.translation?.toLowerCase() || "";
+  
+  if (!text) return 0;
+  
   let score = 0;
   
+  // Check each search term
   searchTerms.forEach(term => {
-    if (text.includes(term)) {
+    // Look for partial matches to be more lenient
+    if (textContainsTerm(text, term)) {
       // Direct match gets higher score
       score += 10;
       
-      // Check if this is a synonym of the original query (gets lower score)
-      if (term !== searchTerms[0]) {
+      // Bonus points for exact matches (surrounded by word boundaries)
+      const exactMatchRegex = new RegExp(`\\b${term}\\b`, 'i');
+      if (exactMatchRegex.test(text)) {
         score += 5;
       }
     }
   });
+  
+  // Add a small bonus for shorter verses (more relevant matches)
+  if (score > 0 && text.length < 100) {
+    score += 2;
+  }
   
   return score;
 };
@@ -97,17 +115,29 @@ export const prepareVersesForSearch = (verses: Verse[]): Verse[] => {
 };
 
 export const searchVerses = (verses: Verse[], query: string): Verse[] => {
+  // Return empty array for empty queries
   if (!query.trim()) return [];
   
   const searchTerms = expandSearchTerms(query);
   const scoredResults: ScoredSearchResult[] = [];
   
+  // Check if we have verses to search
+  if (!verses || verses.length === 0) {
+    console.warn("No verses provided for search");
+    return [];
+  }
+  
+  // Score each verse
   verses.forEach(verse => {
     const score = scoreVerse(verse, searchTerms);
     if (score > 0) {
       scoredResults.push({...verse, score});
     }
   });
+  
+  // Debugging
+  console.log(`Search for "${query}" found ${scoredResults.length} results`);
+  console.log("Search terms:", searchTerms);
   
   // Sort by score (highest first)
   scoredResults.sort((a, b) => b.score - a.score);
