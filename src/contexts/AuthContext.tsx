@@ -1,7 +1,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, UserProgress, getUserProgress, saveUserProgress } from '@/utils/supabase';
+import { 
+  supabase, 
+  UserProgress, 
+  getUserProgress, 
+  saveUserProgress,
+  signInWithGoogle,
+  signOut
+} from '@/utils/supabase';
 import { toast } from 'sonner';
 
 interface AuthContextType {
@@ -19,16 +26,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [userProgress, setUserProgress] = useState<UserProgress | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
-    // Set up session listener
+    // Check if there's an active session
+    const getSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+          throw error;
+        }
+        
+        setUser(session?.user || null);
+        
+        if (session?.user) {
+          const progress = await getUserProgress(session.user.id);
+          setUserProgress(progress);
+        }
+      } catch (error) {
+        console.error("Error retrieving session:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getSession();
+
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setSession(session);
         setUser(session?.user || null);
-        setLoading(false);
-
+        
         if (session?.user) {
           // Fetch user progress when user is authenticated
           try {
@@ -45,23 +72,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user || null);
-      setLoading(false);
-      
-      if (session?.user) {
-        getUserProgress(session.user.id).then(progress => {
-          if (progress) {
-            setUserProgress(progress);
-          }
-        }).catch(error => {
-          console.error("Error fetching initial user progress:", error);
-        });
-      }
-    });
-
     return () => {
       subscription.unsubscribe();
     };
@@ -70,22 +80,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin + '/settings'
-        }
-      });
-      
-      if (error) throw error;
-      
-      toast("Redirecting to Google...", {
-        description: "You'll be redirected to sign in with Google."
-      });
+      await signInWithGoogle();
     } catch (error: any) {
       console.error("Error signing in:", error);
-      toast("Error signing in", {
-        description: error.message || "Please try again later."
+      toast.error("Sign in failed", {
+        description: error.message || "Please try again later"
       });
     } finally {
       setLoading(false);
@@ -95,19 +94,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) throw error;
-      
+      await signOut();
       setUser(null);
       setUserProgress(null);
-      toast("Signed out", {
-        description: "You've been successfully signed out."
-      });
+      toast.success("Signed out successfully");
     } catch (error: any) {
       console.error("Error signing out:", error);
-      toast("Error signing out", {
-        description: error.message || "Please try again later."
+      toast.error("Sign out failed", {
+        description: error.message || "Please try again later"
       });
     } finally {
       setLoading(false);
@@ -122,7 +116,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUserProgress(progress);
     } catch (error: any) {
       console.error("Error updating progress:", error);
-      toast("Error saving progress", {
+      toast.error("Error saving progress", {
         description: "Your reading progress couldn't be saved."
       });
     }

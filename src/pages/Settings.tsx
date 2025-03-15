@@ -11,13 +11,18 @@ const Settings = () => {
   // Helper to safely get user display name
   const getUserDisplayName = () => {
     if (!user) return "User";
-    return user.user_metadata?.name || user.email?.split('@')[0] || "User";
+    return user.user_metadata?.full_name || 
+           user.user_metadata?.name || 
+           user.email?.split('@')[0] || 
+           "User";
   };
 
   // Helper to safely get user avatar
   const getUserAvatar = () => {
     if (!user) return null;
-    return user.user_metadata?.avatar_url || null;
+    return user.user_metadata?.avatar_url || 
+           user.user_metadata?.picture || 
+           null;
   };
 
   return (

@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { LogIn, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface LoginButtonProps {
   variant?: 'default' | 'outline' | 'secondary' | 'ghost';
@@ -10,29 +11,39 @@ interface LoginButtonProps {
 }
 
 export default function LoginButton({ variant = 'default', className }: LoginButtonProps) {
-  const { user, signIn, logout, loading } = useAuth();
+  const { user, signIn, logout } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSignIn = async () => {
     try {
+      setIsLoading(true);
       await signIn();
+      // The redirect will happen automatically - no need to do anything here
     } catch (error: any) {
       console.error("Error signing in:", error);
-      
-      // Provide a friendly error message
-      toast.error("Could not sign in. Please try again later.");
+      toast.error("Could not sign in", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
     try {
+      setIsLoading(true);
       await logout();
     } catch (error) {
       console.error("Error signing out:", error);
-      toast.error("Could not sign out. Please try again later.");
+      toast.error("Could not sign out", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Button variant={variant} className={className} disabled>
         <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>

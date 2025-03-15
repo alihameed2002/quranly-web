@@ -52,3 +52,36 @@ export const getUserProgress = async (userId: string): Promise<UserProgress | nu
     return null;
   }
 };
+
+// Add a helper function to handle Google auth
+export const signInWithGoogle = async () => {
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/settings`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      }
+    });
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("Error signing in with Google:", error);
+    throw error;
+  }
+};
+
+// Add a signOut helper function
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (error) {
+    console.error("Error signing out:", error);
+    throw error;
+  }
+};
