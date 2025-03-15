@@ -2,13 +2,13 @@
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
-import { Search } from "lucide-react";
+import { Search, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import VerseCard from "@/components/VerseCard";
 import { useNavigate } from "react-router-dom";
 import { fetchSearchResults, extendedSampleVerses } from "@/utils/quranData";
 import { Verse } from "@/utils/quranData";
-import { searchVerses } from "@/utils/searchUtils";
+import { searchVerses, expandSearchTerms } from "@/utils/searchUtils";
 import { Input } from "@/components/ui/input";
 
 const Explore = () => {
@@ -16,12 +16,11 @@ const Explore = () => {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Verse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const navigate = useNavigate();
   
   // For debugging - run search on mount with a test query
   useEffect(() => {
-    // Uncomment to test search on mount
-    // handleSearch("mercy");
     console.log("Explore component mounted, ready for search");
   }, []);
   
@@ -40,12 +39,18 @@ const Explore = () => {
     console.log(`Searching for: "${queryToUse}"`);
     
     try {
+      // Get expanded search terms for display
+      const terms = expandSearchTerms(queryToUse);
+      setExpandedTerms(terms);
+      
       // Use direct search on our sample data for now (for quicker implementation)
       // In a real app, fetchSearchResults would call an API
       const searchResults = searchVerses(extendedSampleVerses, queryToUse);
       
       console.log(`Search completed with ${searchResults.length} results`);
-      console.log("First result:", searchResults[0]);
+      if (searchResults.length > 0) {
+        console.log("First result:", searchResults[0]);
+      }
       
       setResults(searchResults);
       
@@ -69,6 +74,13 @@ const Explore = () => {
       });
     } finally {
       setIsSearching(false);
+    }
+  };
+  
+  // Handle Enter key press
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch();
     }
   };
   
@@ -96,7 +108,7 @@ const Explore = () => {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search the Quran..."
                 className="w-full h-12 bg-white/5 border border-white/10 rounded-lg px-4 pr-12 text-white"
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                onKeyDown={handleKeyDown}
               />
               <button 
                 onClick={() => handleSearch()}
@@ -113,9 +125,32 @@ const Explore = () => {
           </div>
         </div>
         
+        {expandedTerms.length > 0 && query.trim() && (
+          <div className="px-6">
+            <div className="flex items-center gap-1 text-xs text-app-text-secondary">
+              <Info className="h-3 w-3" />
+              <span>Also searching for related terms:</span>
+            </div>
+            <div className="mt-1 flex flex-wrap gap-1">
+              {expandedTerms.slice(0, 10).map((term, i) => (
+                <span key={i} className="px-2 py-0.5 bg-white/5 rounded-full text-xs text-app-text-secondary">
+                  {term}
+                </span>
+              ))}
+              {expandedTerms.length > 10 && (
+                <span className="px-2 py-0.5 rounded-full text-xs text-app-text-secondary">
+                  +{expandedTerms.length - 10} more
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+        
         {results.length > 0 && (
           <div className="px-6">
-            <h2 className="text-xl font-semibold text-white mb-4">Search Results</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Search Results ({results.length})
+            </h2>
             <div className="space-y-6">
               {results.map((result) => (
                 <div 
@@ -134,6 +169,18 @@ const Explore = () => {
                   />
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+        
+        {query && !isSearching && results.length === 0 && (
+          <div className="px-6 py-10 text-center">
+            <div className="text-app-text-secondary">
+              <Search className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-lg">No results found for "{query}"</p>
+              <p className="mt-2 text-sm opacity-70">
+                Try using different keywords or more general terms
+              </p>
             </div>
           </div>
         )}
