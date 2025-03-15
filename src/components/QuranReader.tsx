@@ -30,20 +30,36 @@ export default function QuranReader({
   // Load verse data when component mounts or when current verse changes
   useEffect(() => {
     const loadVerseData = async () => {
+      // Input validation - ensure we're working with valid numbers
+      const validSurah = Number(currentSurah);
+      const validVerse = Number(currentVerseNumber);
+      
+      if (isNaN(validSurah) || isNaN(validVerse) || validSurah < 1 || validSurah > 114 || validVerse < 1) {
+        console.error(`Invalid surah or verse requested: surah=${currentSurah}, verse=${currentVerseNumber}`);
+        setError("Invalid surah or verse number requested");
+        setIsLoading(false);
+        toast({
+          title: "Error",
+          description: "Invalid surah or verse number",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
       
-      console.log(`Loading verse data for surah ${currentSurah}, verse ${currentVerseNumber}`);
+      console.log(`Loading verse data for surah ${validSurah}, verse ${validVerse}`);
       
       try {
-        const { surah, verse } = await fetchQuranData(currentSurah, currentVerseNumber);
+        const { surah, verse } = await fetchQuranData(validSurah, validVerse);
         
         // Additional validation to ensure we got the right verse
-        if (verse.surah !== currentSurah || verse.ayah !== currentVerseNumber) {
-          console.warn(`Received incorrect verse: got surah ${verse.surah}, ayah ${verse.ayah} but requested surah ${currentSurah}, ayah ${currentVerseNumber}`);
+        if (verse.surah !== validSurah || verse.ayah !== validVerse) {
+          console.warn(`Received incorrect verse: got surah ${verse.surah}, ayah ${verse.ayah} but requested surah ${validSurah}, ayah ${validVerse}`);
           
           // If we got a sample verse instead of the right one, show an error
-          if (verse.surah === 7 && verse.ayah === 128 && (currentSurah !== 7 || currentVerseNumber !== 128)) {
+          if (verse.surah === 7 && verse.ayah === 128 && (validSurah !== 7 || validVerse !== 128)) {
             throw new Error("Could not load the requested verse.");
           }
         }
@@ -70,9 +86,16 @@ export default function QuranReader({
   // Update when props change
   useEffect(() => {
     console.log(`Props updated: initialSurah=${initialSurah}, initialVerse=${initialVerse}`);
-    if (initialSurah && initialVerse) {
-      setCurrentSurah(initialSurah);
-      setCurrentVerseNumber(initialVerse);
+    
+    // Only update if we have valid numbers
+    const validSurah = Number(initialSurah);
+    const validVerse = Number(initialVerse);
+    
+    if (!isNaN(validSurah) && !isNaN(validVerse) && validSurah > 0 && validVerse > 0) {
+      setCurrentSurah(validSurah);
+      setCurrentVerseNumber(validVerse);
+    } else {
+      console.warn(`Received invalid initialSurah=${initialSurah} or initialVerse=${initialVerse}, using defaults`);
     }
   }, [initialSurah, initialVerse]);
   

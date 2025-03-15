@@ -24,18 +24,22 @@ const Reading = () => {
     let validSurah = 7; // Default
     let validVerse = 128; // Default
     
-    if (surahParam && !isNaN(Number(surahParam))) {
+    if (surahParam) {
       const surahNum = Number(surahParam);
       // Validate surah number (1-114)
-      if (surahNum >= 1 && surahNum <= 114) {
+      if (!isNaN(surahNum) && surahNum >= 1 && surahNum <= 114) {
         validSurah = surahNum;
+      } else {
+        console.warn(`Invalid surah parameter: ${surahParam}, using default`);
       }
     }
     
-    if (verseParam && !isNaN(Number(verseParam))) {
+    if (verseParam) {
       const verseNum = Number(verseParam);
-      if (verseNum >= 1) { // Simple validation, ideally we'd check against max verses per surah
+      if (!isNaN(verseNum) && verseNum >= 1) {
         validVerse = verseNum;
+      } else {
+        console.warn(`Invalid verse parameter: ${verseParam}, using default`);
       }
     }
     
