@@ -37,7 +37,7 @@ const SearchResults = ({
             >
               <VerseCard
                 surahName={result.surahName || ""}
-                surahNumber={result.surah || 0}
+                surahNumber={result.surah || 0} 
                 verseNumber={result.ayah || 0}
                 totalVerses={result.totalVerses || 0}
                 arabicText={result.arabic || ""}

@@ -1,3 +1,4 @@
+
 import { Share, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -47,8 +48,10 @@ export default function VerseCard({
     return (
       <div className={cn("w-full", className)}>
         <div className="flex flex-col mb-2">
-          <h3 className="text-white font-medium">{surahName}</h3>
-          <p className="text-app-text-secondary text-sm">Surah {surahNumber} : Ayah {verseNumber}</p>
+          <h3 className="text-white font-medium">{surahName || ""}</h3>
+          <p className="text-app-text-secondary text-sm">
+            Surah {surahNumber || 0} : Ayah {verseNumber || 0}
+          </p>
         </div>
         <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">
           {arabicText.length > 100 ? arabicText.substring(0, 100) + '...' : arabicText}

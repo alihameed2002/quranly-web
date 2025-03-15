@@ -48,15 +48,16 @@ export const fetchStaticQuranData = async (): Promise<Verse[]> => {
     
     // Process the data into our format
     data.forEach((surah: any) => {
-      const surahNumber = surah.number;
-      const surahName = surah.englishName || surah.name;
-      const totalVerses = surah.numberOfAyahs || surah.verses.length;
+      const surahNumber = parseInt(surah.number, 10) || 0;
+      const surahName = surah.englishName || surah.name || "";
+      const totalVerses = surah.numberOfAyahs || surah.verses.length || 0;
       
       surah.verses.forEach((verse: any, index: number) => {
+        const ayahNumber = index + 1;
         verses.push({
-          id: (surahNumber * 1000) + (index + 1),
+          id: (surahNumber * 1000) + ayahNumber,
           surah: surahNumber,
-          ayah: index + 1,
+          ayah: ayahNumber,
           arabic: verse.arabic || "",
           translation: verse.translation || verse.text || "",
           surahName: surahName,
