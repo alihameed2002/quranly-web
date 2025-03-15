@@ -1,10 +1,12 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
 import { fetchQuranData, fetchSurah, Verse, Surah } from "@/utils/quranData";
 import { useProgress } from "@/hooks/useProgress";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Button } from "./ui/button";
 
 interface QuranReaderProps {
   className?: string;
@@ -26,11 +28,13 @@ export default function QuranReader({
   const [isLoading, setIsLoading] = useState(true);
   const [pointsEarned, setPointsEarned] = useState(7600);
   const [error, setError] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
   
-  // Load verse data when component mounts or when current verse changes
+  const fromSearch = location.state?.fromSearch || false;
+  
   useEffect(() => {
     const loadVerseData = async () => {
-      // Input validation - ensure we're working with valid numbers
       const validSurah = Number(currentSurah);
       const validVerse = Number(currentVerseNumber);
       
@@ -54,11 +58,9 @@ export default function QuranReader({
       try {
         const { surah, verse } = await fetchQuranData(validSurah, validVerse);
         
-        // Additional validation to ensure we got the right verse
         if (verse.surah !== validSurah || verse.ayah !== validVerse) {
           console.warn(`Received incorrect verse: got surah ${verse.surah}, ayah ${verse.ayah} but requested surah ${validSurah}, ayah ${validVerse}`);
           
-          // If we got a sample verse instead of the right one, show an error
           if (verse.surah === 7 && verse.ayah === 128 && (validSurah !== 7 || validVerse !== 128)) {
             throw new Error("Could not load the requested verse.");
           }
@@ -66,7 +68,7 @@ export default function QuranReader({
         
         setSurahData(surah);
         setVerseData(verse);
-        setPointsEarned(Math.floor(Math.random() * 5000) + 5000); // Random points for demo
+        setPointsEarned(Math.floor(Math.random() * 5000) + 5000);
       } catch (error) {
         console.error("Failed to load verse data:", error);
         setError("Failed to load the Quran data. Please try again.");
@@ -83,11 +85,9 @@ export default function QuranReader({
     loadVerseData();
   }, [currentSurah, currentVerseNumber, toast]);
   
-  // Update when props change
   useEffect(() => {
     console.log(`Props updated: initialSurah=${initialSurah}, initialVerse=${initialVerse}`);
     
-    // Only update if we have valid numbers
     const validSurah = Number(initialSurah);
     const validVerse = Number(initialVerse);
     
@@ -103,16 +103,13 @@ export default function QuranReader({
     if (isLoading || !surahData) return;
     
     if (currentVerseNumber < surahData.numberOfAyahs) {
-      // Go to next verse in the same surah
       setCurrentVerseNumber(prev => prev + 1);
       markVerseAsRead(currentSurah, currentVerseNumber);
     } else if (currentSurah < 114) {
-      // Go to first verse of next surah
       setCurrentSurah(prev => prev + 1);
       setCurrentVerseNumber(1);
       markVerseAsRead(currentSurah, currentVerseNumber);
     } else {
-      // End of Quran
       toast({
         title: "End of Quran",
         description: "You have reached the end of the Quran.",
@@ -124,10 +121,8 @@ export default function QuranReader({
     if (isLoading || (currentVerseNumber <= 1 && currentSurah <= 1)) return;
     
     if (currentVerseNumber > 1) {
-      // Go to previous verse in the same surah
       setCurrentVerseNumber(prev => prev - 1);
     } else if (currentSurah > 1) {
-      // Need to fetch the previous surah to know its number of verses
       fetchSurah(currentSurah - 1).then(prevSurah => {
         setCurrentSurah(prev => prev - 1);
         setCurrentVerseNumber(prevSurah.numberOfAyahs);
@@ -141,6 +136,10 @@ export default function QuranReader({
       title: "Great job!",
       description: `You've earned ${pointsEarned} points for this verse.`,
     });
+  };
+  
+  const returnToSearchResults = () => {
+    navigate('/explore', { state: { preserveSearch: true } });
   };
   
   if (isLoading && !verseData) {
@@ -169,6 +168,19 @@ export default function QuranReader({
   
   return (
     <div className={cn("w-full space-y-6 pb-24", className)}>
+      {fromSearch && (
+        <div className="px-6 pt-2">
+          <Button 
+            variant="outline" 
+            onClick={returnToSearchResults}
+            className="glass-card text-white border-white/20 hover:bg-white/10 hover:text-white"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            Return to Results
+          </Button>
+        </div>
+      )}
+      
       {verseData && surahData && (
         <VerseCard 
           surahName={surahData.englishName}

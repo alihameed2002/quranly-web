@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSearchResults, fetchFullQuranData, Verse } from "@/utils/quranData";
 import { expandSearchTerms } from "@/utils/searchUtils";
 import SearchBar from "@/components/search/SearchBar";
@@ -68,6 +68,7 @@ const Explore = () => {
   const [totalVerses, setTotalVerses] = useState<number>(0);
   const [loadingProgress, setLoadingProgress] = useState<number>(0);
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     const initializeSearch = async () => {
@@ -114,6 +115,13 @@ const Explore = () => {
     const savedSearches = localStorage.getItem("recentSearches");
     if (savedSearches) {
       setRecentSearches(JSON.parse(savedSearches));
+    }
+    
+    // Check if we should preserve the search state
+    const { state } = location;
+    if (state?.preserveSearch && query) {
+      // If returning from reading a verse, don't re-initialize
+      setIsInitializing(false);
     }
   }, [toast]);
   
@@ -208,7 +216,9 @@ const Explore = () => {
     }
     
     console.log(`Navigating to surah: ${surahNumber}, ayah: ${verseNumber}`);
-    navigate(`/reading?surah=${surahNumber}&verse=${verseNumber}`);
+    navigate(`/reading?surah=${surahNumber}&verse=${verseNumber}`, {
+      state: { fromSearch: true }
+    });
   };
   
   return (
