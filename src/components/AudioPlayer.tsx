@@ -32,6 +32,17 @@ export default function AudioPlayer({
   
   const [volume, setVolume] = useState(80);
   
+  // Ensure component updates when the props change
+  useEffect(() => {
+    if (isPlaying) {
+      // If audio is playing and props change, toggle to stop and restart
+      togglePlay();
+      setTimeout(() => {
+        togglePlay();
+      }, 100);
+    }
+  }, [surahId, verseId]);
+  
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     seekTo(value);
@@ -64,7 +75,7 @@ export default function AudioPlayer({
           <Volume2 className="h-5 w-5 text-white" />
           <div>
             <p className="text-sm text-white">Currently playing</p>
-            <p className="text-xs text-app-text-secondary">Surah Al-Araf - Verse {verseId}</p>
+            <p className="text-xs text-app-text-secondary">Surah {surahId} - Verse {verseId}</p>
           </div>
         </div>
         <button 

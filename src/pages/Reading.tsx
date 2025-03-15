@@ -5,23 +5,39 @@ import QuranReader from "@/components/QuranReader";
 import AudioPlayer from "@/components/AudioPlayer";
 import Navigation from "@/components/Navigation";
 import { useProgress } from "@/hooks/useProgress";
-import { useNavigate } from "react-router-dom";
-import { BookOpen, ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { BookOpen } from "lucide-react";
 
 const Reading = () => {
   const { progress, getTimeSpentFormatted } = useProgress();
   const [loading, setLoading] = useState(true);
   const [showAudioPlayer, setShowAudioPlayer] = useState(false);
+  const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
+  const [currentVerse, setCurrentVerse] = useState(128); // Default to sample verse
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
+    // Parse surah and verse from URL query parameters
+    const params = new URLSearchParams(location.search);
+    const surahParam = params.get('surah');
+    const verseParam = params.get('verse');
+    
+    if (surahParam && !isNaN(Number(surahParam))) {
+      setCurrentSurah(Number(surahParam));
+    }
+    
+    if (verseParam && !isNaN(Number(verseParam))) {
+      setCurrentVerse(Number(verseParam));
+    }
+    
     // Simulate loading data
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1000);
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [location.search]);
   
   if (loading) {
     return (
@@ -43,8 +59,7 @@ const Reading = () => {
         totalPoints={progress.points / 1000}
         totalVerses={progress.totalVerses}
         timeSpent={formattedTimeSpent}
-        showBack={true}
-        onBack={() => navigate('/')}
+        showBack={false}
       />
       
       <main className="max-w-screen-md mx-auto space-y-8 py-4">
@@ -58,7 +73,10 @@ const Reading = () => {
           </div>
         </div>
         
-        <QuranReader />
+        <QuranReader
+          initialSurah={currentSurah}
+          initialVerse={currentVerse}
+        />
         
         <div className="px-6">
           <button 
@@ -70,7 +88,10 @@ const Reading = () => {
           
           {showAudioPlayer && (
             <div className="mt-4">
-              <AudioPlayer />
+              <AudioPlayer 
+                surahId={currentSurah}
+                verseId={currentVerse}
+              />
             </div>
           )}
         </div>

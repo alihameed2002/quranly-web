@@ -1,5 +1,5 @@
 
-import { Home, BookOpen, Search, Users, Settings } from "lucide-react";
+import { Home, BookOpen, Search, Settings } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -9,11 +9,6 @@ export default function Navigation() {
   
   const navItems = [
     {
-      name: "Home",
-      icon: Home,
-      path: "/"
-    },
-    {
       name: "Reading",
       icon: BookOpen,
       path: "/reading"
@@ -22,11 +17,6 @@ export default function Navigation() {
       name: "Explore",
       icon: Search,
       path: "/explore"
-    },
-    {
-      name: "Leaderboard",
-      icon: Users,
-      path: "/leaderboard"
     },
     {
       name: "Settings",

@@ -5,6 +5,8 @@ export interface Verse {
   ayah: number;
   arabic: string;
   translation: string;
+  surahName?: string;
+  totalVerses?: number;
 }
 
 export interface Surah {
@@ -81,7 +83,7 @@ export const fetchVerse = async (surahNumber: number, verseNumber: number): Prom
   }
 };
 
-// Fetch surah info - Fixed function name to match usage in QuranReader.tsx
+// Fetch surah info
 export const fetchSurah = async (surahNumber: number): Promise<Surah> => {
   try {
     const response = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`);
@@ -144,5 +146,85 @@ export const fetchSurahs = async (): Promise<Surah[]> => {
   } catch (error) {
     console.error("Error fetching surah list:", error);
     return [sampleSurah]; // Fallback to sample data
+  }
+};
+
+// Search functionality
+export const fetchSearchResults = async (query: string): Promise<Verse[]> => {
+  if (!query.trim()) return [];
+  
+  try {
+    // In a real app, we would connect to a proper search API
+    // For now, we'll simulate search results with a few hard-coded verses
+    const searchResults: Verse[] = [];
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Implementing a simple search with the sample verses we have
+    const surahs = await fetchSurahs();
+    
+    // For demo purposes, add a few sample verses that we'll "search through"
+    const sampleVerses = [
+      {
+        id: 1,
+        surah: 2,
+        ayah: 155,
+        arabic: "وَلَنَبْلُوَنَّكُم بِشَيْءٍ مِّنَ الْخَوْفِ وَالْجُوعِ وَنَقْصٍ مِّنَ الْأَمْوَالِ وَالْأَنفُسِ وَالثَّمَرَاتِ ۗ وَبَشِّرِ الصَّابِرِينَ",
+        translation: "And We will surely test you with something of fear and hunger and a loss of wealth and lives and fruits, but give good tidings to the patient",
+        surahName: "Al-Baqarah",
+        totalVerses: 286
+      },
+      {
+        id: 2,
+        surah: 3,
+        ayah: 159,
+        arabic: "فَبِمَا رَحْمَةٍ مِّنَ اللَّهِ لِنتَ لَهُمْ ۖ وَلَوْ كُنتَ فَظًّا غَلِيظَ الْقَلْبِ لَانفَضُّوا مِنْ حَوْلِكَ ۖ فَاعْفُ عَنْهُمْ وَاسْتَغْفِرْ لَهُمْ وَشَاوِرْهُمْ فِي الْأَمْرِ ۖ فَإِذَا عَزَمْتَ فَتَوَكَّلْ عَلَى اللَّهِ ۚ إِنَّ اللَّهَ يُحِبُّ الْمُتَوَكِّلِينَ",
+        translation: "So by mercy from Allah, [O Muhammad], you were lenient with them. And if you had been rude [in speech] and harsh in heart, they would have disbanded from about you. So pardon them and ask forgiveness for them and consult them in the matter. And when you have decided, then rely upon Allah. Indeed, Allah loves those who rely [upon Him].",
+        surahName: "Ali 'Imran",
+        totalVerses: 200
+      },
+      {
+        id: 3,
+        surah: 7,
+        ayah: 128,
+        arabic: sampleVerse.arabic,
+        translation: sampleVerse.translation,
+        surahName: "Al-Araf",
+        totalVerses: 206
+      },
+      {
+        id: 4,
+        surah: 94,
+        ayah: 5,
+        arabic: "فَإِنَّ مَعَ الْعُسْرِ يُسْرًا",
+        translation: "For indeed, with hardship [will be] ease.",
+        surahName: "Ash-Sharh",
+        totalVerses: 8
+      },
+      {
+        id: 5,
+        surah: 94,
+        ayah: 6,
+        arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا",
+        translation: "Indeed, with hardship [will be] ease.",
+        surahName: "Ash-Sharh",
+        totalVerses: 8
+      }
+    ];
+    
+    // Simple search function
+    const lowerQuery = query.toLowerCase();
+    
+    // Filter verses that match the query
+    const filteredVerses = sampleVerses.filter(verse => 
+      verse.translation.toLowerCase().includes(lowerQuery) || 
+      verse.surahName.toLowerCase().includes(lowerQuery)
+    );
+    
+    return filteredVerses;
+  } catch (error) {
+    console.error("Error performing search:", error);
+    return [];
   }
 };

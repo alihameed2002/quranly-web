@@ -9,13 +9,19 @@ import { useToast } from "@/hooks/use-toast";
 
 interface QuranReaderProps {
   className?: string;
+  initialSurah?: number;
+  initialVerse?: number;
 }
 
-export default function QuranReader({ className }: QuranReaderProps) {
+export default function QuranReader({ 
+  className,
+  initialSurah = 7, // Default to Al-Araf
+  initialVerse = 128 // Default to the sample verse
+}: QuranReaderProps) {
   const { markVerseAsRead } = useProgress();
   const { toast } = useToast();
-  const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
-  const [currentVerseNumber, setCurrentVerseNumber] = useState(128); // Default to the sample verse
+  const [currentSurah, setCurrentSurah] = useState(initialSurah);
+  const [currentVerseNumber, setCurrentVerseNumber] = useState(initialVerse);
   const [surahData, setSurahData] = useState<Surah | null>(null);
   const [verseData, setVerseData] = useState<Verse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +50,12 @@ export default function QuranReader({ className }: QuranReaderProps) {
     
     loadVerseData();
   }, [currentSurah, currentVerseNumber, toast]);
+  
+  // Update when props change
+  useEffect(() => {
+    setCurrentSurah(initialSurah);
+    setCurrentVerseNumber(initialVerse);
+  }, [initialSurah, initialVerse]);
   
   const goToNextVerse = () => {
     if (isLoading || !surahData) return;

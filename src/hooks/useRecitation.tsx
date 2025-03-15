@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface RecitationOptions {
   surahId?: number;
@@ -13,15 +13,34 @@ export function useRecitation({ surahId = 1, verseId = 1, reciterId = 7 }: Recit
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
   
   // In a real app, we would construct the URL based on parameters
-  const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${verseId}.mp3`;
+  const audioUrl = `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${surahId}:${verseId}.mp3`;
   
   useEffect(() => {
-    const audio = new Audio(audioUrl);
-    setAudioElement(audio);
+    // Clean up any existing audio element
+    if (audioElementRef.current) {
+      audioElementRef.current.pause();
+      audioElementRef.current.src = '';
+      audioElementRef.current.remove();
+    }
     
+    // Create new audio element
+    const audio = new Audio();
+    audioElementRef.current = audio;
+    
+    // Reset states
+    setIsPlaying(false);
+    setIsLoading(false);
+    setProgress(0);
+    setCurrentTime(0);
+    setDuration(0);
+    
+    // Set the source
+    audio.src = audioUrl;
+    
+    // Set up event listeners
     audio.addEventListener('loadedmetadata', () => {
       setDuration(audio.duration);
       setIsLoading(false);
@@ -38,36 +57,49 @@ export function useRecitation({ surahId = 1, verseId = 1, reciterId = 7 }: Recit
       setCurrentTime(0);
     });
     
+    audio.addEventListener('error', (e) => {
+      console.error("Audio error:", e);
+      setIsLoading(false);
+      setIsPlaying(false);
+    });
+    
+    // Cleanup function
     return () => {
-      audio.pause();
-      audio.src = '';
-      audio.remove();
+      if (audioElementRef.current) {
+        audioElementRef.current.pause();
+        audioElementRef.current.src = '';
+        
+        audio.removeEventListener('loadedmetadata', () => {});
+        audio.removeEventListener('timeupdate', () => {});
+        audio.removeEventListener('ended', () => {});
+        audio.removeEventListener('error', () => {});
+      }
     };
-  }, [audioUrl]);
+  }, [audioUrl, surahId, verseId]);
   
   const togglePlay = () => {
-    if (!audioElement) return;
+    if (!audioElementRef.current) return;
     
     if (isPlaying) {
-      audioElement.pause();
+      audioElementRef.current.pause();
+      setIsPlaying(false);
     } else {
       setIsLoading(true);
-      audioElement.play().then(() => {
+      audioElementRef.current.play().then(() => {
         setIsLoading(false);
+        setIsPlaying(true);
       }).catch(error => {
         console.error("Audio playback error:", error);
         setIsLoading(false);
       });
     }
-    
-    setIsPlaying(!isPlaying);
   };
   
   const seekTo = (percent: number) => {
-    if (!audioElement || !duration) return;
+    if (!audioElementRef.current || !duration) return;
     
     const seekTime = (percent / 100) * duration;
-    audioElement.currentTime = seekTime;
+    audioElementRef.current.currentTime = seekTime;
     setCurrentTime(seekTime);
     setProgress(percent);
   };

@@ -14,6 +14,7 @@ interface VerseCardProps {
   translation: string;
   className?: string;
   likes?: number;
+  minimized?: boolean;
 }
 
 export default function VerseCard({
@@ -24,7 +25,8 @@ export default function VerseCard({
   arabicText,
   translation,
   className,
-  likes = 3100
+  likes = 3100,
+  minimized = false
 }: VerseCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
@@ -57,6 +59,34 @@ export default function VerseCard({
       description: `${surahName} (${surahNumber}:${verseNumber})`,
     });
   };
+
+  if (minimized) {
+    return (
+      <div className={cn("w-full", className)}>
+        <div className="flex justify-between mb-2">
+          <div>
+            <h3 className="text-white font-medium">{surahNumber}. {surahName}</h3>
+            <p className="text-app-text-secondary text-sm">{verseNumber}/{totalVerses}</p>
+          </div>
+          <button 
+            className="h-8 w-8 rounded-full flex items-center justify-center glass-card"
+            onClick={(e) => {
+              e.stopPropagation();
+              togglePlay();
+            }}
+          >
+            <Volume2 className="h-4 w-4 text-white" />
+          </button>
+        </div>
+        <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">
+          {arabicText.length > 100 ? arabicText.substring(0, 100) + '...' : arabicText}
+        </div>
+        <div className="text-app-text-secondary text-sm">
+          {translation.length > 120 ? translation.substring(0, 120) + '...' : translation}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn("w-full space-y-4 animate-fade-in", className)}>
