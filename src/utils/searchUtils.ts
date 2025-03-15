@@ -1,12 +1,12 @@
 
 import { Verse } from './quranData';
 
-// More sophisticated text normalization for better matching
+// Comprehensive text normalization for better matching
 const normalizeText = (text: string): string => {
   return text
     .toLowerCase()
-    // Remove common punctuation and diacritics
-    .replace(/[.,;:'"!?()-]/g, ' ')
+    // Remove common punctuation, diacritics and special characters
+    .replace(/[.,;:'"!?()[\]{}*&^%$#@~`|\\/<>+=_-]/g, ' ')
     // Normalize whitespace
     .replace(/\s+/g, ' ')
     .trim();
@@ -66,8 +66,9 @@ const calculateFuzzyMatchScore = (token: string, text: string): number => {
   const normalizedText = normalizeText(text);
   const normalizedToken = normalizeText(token);
   
-  // Exact match gets highest score
-  if (normalizedText.includes(` ${normalizedToken} `)) {
+  // Exact word match gets highest score
+  const wordPattern = new RegExp(`\\b${normalizedToken}\\b`, 'i');
+  if (wordPattern.test(normalizedText)) {
     return 10;
   }
   
@@ -90,11 +91,12 @@ const calculateFuzzyMatchScore = (token: string, text: string): number => {
     return 5;
   }
   
-  // Character-level fuzzy match for short tokens (detect typos and similar words)
+  // Advanced character-level fuzzy match for detecting typos and similar words
   if (token.length >= 4) {
     const words = normalizedText.split(/\s+/);
     for (const word of words) {
       if (word.length >= 4) {
+        // Check for character sequences overlap
         let commonChars = 0;
         for (let i = 0; i < token.length - 1; i++) {
           if (word.includes(token.substring(i, i + 2))) {
@@ -102,6 +104,7 @@ const calculateFuzzyMatchScore = (token: string, text: string): number => {
           }
         }
         
+        // Calculate match ratio based on common character sequences
         const matchRatio = commonChars / (token.length - 1);
         if (matchRatio > 0.5) {
           return Math.floor(matchRatio * 4);
@@ -156,6 +159,9 @@ export const scoreVerse = (verse: Verse, searchTokens: string[]): number => {
     }
   }
   
+  // No matches, return zero score
+  if (matchedTokens === 0) return 0;
+  
   // Bonus for matching multiple tokens (more relevant matches)
   if (matchedTokens > 1) {
     score += matchedTokens * 5;
@@ -199,7 +205,7 @@ export interface ScoredSearchResult extends Verse {
   score: number;
 }
 
-// Main search function
+// Main search function with improved search algorithm
 export const searchVerses = (verses: Verse[], query: string): Verse[] => {
   if (!query.trim() || !verses || verses.length === 0) return [];
   
