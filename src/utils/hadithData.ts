@@ -1,4 +1,3 @@
-
 import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 
 // This will be replaced with actual data loaded from the Github repository
@@ -10,14 +9,10 @@ export const loadHadithData = async (): Promise<void> => {
   if (isDataLoaded) return;
 
   try {
-    // Load Bukhari hadiths
+    // Load Bukhari hadiths only
     const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/bukhari_english.json');
     const bukhariData = await bukhariResponse.json();
     
-    // Load Muslim hadiths
-    const muslimResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/muslim_english.json');
-    const muslimData = await muslimResponse.json();
-
     // Process and deduplicate hadiths
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
@@ -43,30 +38,19 @@ export const loadHadithData = async (): Promise<void> => {
       }
     });
 
-    // Process Muslim hadiths
-    muslimData.forEach((item: any, index: number) => {
-      // Create a key for deduplication
-      const key = `${item.text}`;
-      
-      if (!seen.has(key) && item.text && item.text_ar) {
-        hadiths.push({
-          id: bukhariData.length + index + 1,
-          collection: "Sahih Muslim",
-          bookNumber: item.book || 0,
-          chapterNumber: item.chapter || 0,
-          hadithNumber: item.hadith || 0,
-          arabic: item.text_ar || "",
-          english: item.text || "",
-          reference: `Sahih Muslim ${item.book || 0}:${item.hadith || 0}`,
-          grade: item.grade || "Sahih"
-        });
-        seen.add(key);
+    // Sort hadiths chronologically by book number and hadith number
+    hadiths.sort((a, b) => {
+      // First compare by book number
+      if (a.bookNumber !== b.bookNumber) {
+        return a.bookNumber - b.bookNumber;
       }
+      // If book numbers are the same, compare by hadith number
+      return a.hadithNumber - b.hadithNumber;
     });
 
     cachedHadiths = hadiths;
     isDataLoaded = true;
-    console.log(`Loaded ${hadiths.length} unique hadiths from Bukhari and Muslim collections`);
+    console.log(`Loaded ${hadiths.length} unique hadiths from Sahih Bukhari collection in chronological order`);
   } catch (error) {
     console.error("Failed to load hadith data:", error);
     // Use sample data as fallback

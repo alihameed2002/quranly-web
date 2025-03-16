@@ -20,8 +20,11 @@ const SunnahReading = () => {
     const bookParam = params.get('book');
     const hadithParam = params.get('hadith');
     
-    if (collectionParam) {
+    // Only allow Sahih Bukhari collection for now
+    if (collectionParam && collectionParam === "Sahih Bukhari") {
       setCurrentCollection(collectionParam);
+    } else {
+      setCurrentCollection("Sahih Bukhari");
     }
     
     if (bookParam) {
