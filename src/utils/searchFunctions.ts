@@ -34,3 +34,6 @@ export const fetchSearchResults = async (query: string, maxResults = 100): Promi
     return [];
   }
 };
+
+// Alias for backward compatibility
+export const searchQuran = fetchSearchResults;

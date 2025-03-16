@@ -6,9 +6,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { BookText } from "lucide-react";
 import { searchHadith } from "@/utils/hadithData";
 import { Hadith } from "@/utils/hadithTypes";
-import { SearchBar } from "@/components/search/SearchBar";
-import { SearchFilters } from "@/components/search/SearchFilters";
-import { SearchLoadingIndicator } from "@/components/search/SearchLoadingIndicator";
+import SearchBar from "@/components/search/SearchBar";
+import SearchFilters from "@/components/search/SearchFilters";
+import SearchLoadingIndicator from "@/components/search/SearchLoadingIndicator";
 import SunnahSearchResults from "@/components/search/SunnahSearchResults";
 
 const SunnahExplore = () => {
@@ -16,6 +16,8 @@ const SunnahExplore = () => {
   const [searchResults, setSearchResults] = useState<Hadith[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   
   const location = useLocation();
@@ -44,13 +46,31 @@ const SunnahExplore = () => {
       }, 100);
     }
     
+    // Load recent searches from localStorage
+    const savedSearches = localStorage.getItem("sunnahRecentSearches");
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
+    }
+    
     setIsInitializing(false);
   }, [location.state]);
   
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+  const addToRecentSearches = (query: string) => {
+    if (!query.trim()) return;
     
-    if (!query.trim()) {
+    const updatedSearches = [
+      query,
+      ...recentSearches.filter(s => s !== query)
+    ].slice(0, 5);
+    
+    setRecentSearches(updatedSearches);
+    localStorage.setItem("sunnahRecentSearches", JSON.stringify(updatedSearches));
+  };
+  
+  const handleSearch = async (query?: string) => {
+    const queryToUse = query || searchQuery;
+    
+    if (!queryToUse.trim()) {
       setSearchResults([]);
       return;
     }
@@ -58,9 +78,20 @@ const SunnahExplore = () => {
     setIsSearching(true);
     
     try {
-      const results = await searchHadith(query);
-      console.log(`Found ${results.length} results for "${query}"`);
+      const results = await searchHadith(queryToUse);
+      console.log(`Found ${results.length} results for "${queryToUse}"`);
       setSearchResults(results);
+      
+      if (results.length > 0) {
+        addToRecentSearches(queryToUse);
+      }
+      
+      // Update expanded terms for search filters display
+      import('@/utils/searchUtils').then(({ expandSearchTerms }) => {
+        const terms = expandSearchTerms(queryToUse);
+        setExpandedTerms(terms);
+      });
+      
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
@@ -101,15 +132,25 @@ const SunnahExplore = () => {
         <div className="px-6">
           <SearchBar 
             query={searchQuery}
-            onSearch={handleSearch}
-            placeholder="Search hadith..."
+            setQuery={setSearchQuery}
+            handleSearch={handleSearch}
+            isSearching={isSearching}
+            isInitializing={isInitializing}
+            recentSearches={recentSearches}
           />
           
-          <SearchFilters />
+          <div className="mt-3">
+            <SearchFilters
+              expandedTerms={expandedTerms}
+              query={searchQuery}
+            />
+          </div>
         </div>
         
         {isSearching && (
-          <SearchLoadingIndicator query={searchQuery} />
+          <div className="px-6">
+            <SearchLoadingIndicator loadingProgress={75} />
+          </div>
         )}
         
         <div 

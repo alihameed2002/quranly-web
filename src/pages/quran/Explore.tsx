@@ -4,11 +4,11 @@ import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen } from "lucide-react";
-import { searchQuran } from "@/utils/searchFunctions";
+import { fetchSearchResults } from "@/utils/searchFunctions";
 import { Verse } from "@/utils/quranData";
-import { SearchBar } from "@/components/search/SearchBar";
-import { SearchFilters } from "@/components/search/SearchFilters";
-import { SearchLoadingIndicator } from "@/components/search/SearchLoadingIndicator";
+import SearchBar from "@/components/search/SearchBar";
+import SearchFilters from "@/components/search/SearchFilters";
+import SearchLoadingIndicator from "@/components/search/SearchLoadingIndicator";
 import SearchResults from "@/components/search/SearchResults";
 
 const QuranExplore = () => {
@@ -16,6 +16,8 @@ const QuranExplore = () => {
   const [searchResults, setSearchResults] = useState<Verse[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   
   const location = useLocation();
@@ -44,13 +46,31 @@ const QuranExplore = () => {
       }, 100);
     }
     
+    // Load recent searches from localStorage
+    const savedSearches = localStorage.getItem("quranRecentSearches");
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
+    }
+    
     setIsInitializing(false);
   }, [location.state]);
   
-  const handleSearch = async (query: string) => {
-    setSearchQuery(query);
+  const addToRecentSearches = (query: string) => {
+    if (!query.trim()) return;
     
-    if (!query.trim()) {
+    const updatedSearches = [
+      query,
+      ...recentSearches.filter(s => s !== query)
+    ].slice(0, 5);
+    
+    setRecentSearches(updatedSearches);
+    localStorage.setItem("quranRecentSearches", JSON.stringify(updatedSearches));
+  };
+  
+  const handleSearch = async (query?: string) => {
+    const queryToUse = query || searchQuery;
+    
+    if (!queryToUse.trim()) {
       setSearchResults([]);
       return;
     }
@@ -58,9 +78,20 @@ const QuranExplore = () => {
     setIsSearching(true);
     
     try {
-      const results = await searchQuran(query);
-      console.log(`Found ${results.length} results for "${query}"`);
+      const results = await fetchSearchResults(queryToUse);
+      console.log(`Found ${results.length} results for "${queryToUse}"`);
       setSearchResults(results);
+      
+      if (results.length > 0) {
+        addToRecentSearches(queryToUse);
+      }
+      
+      // Update expanded terms for search filters display
+      import('@/utils/searchUtils').then(({ expandSearchTerms }) => {
+        const terms = expandSearchTerms(queryToUse);
+        setExpandedTerms(terms);
+      });
+      
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
@@ -101,15 +132,25 @@ const QuranExplore = () => {
         <div className="px-6">
           <SearchBar 
             query={searchQuery}
-            onSearch={handleSearch}
-            placeholder="Search Quran..."
+            setQuery={setSearchQuery}
+            handleSearch={handleSearch}
+            isSearching={isSearching}
+            isInitializing={isInitializing}
+            recentSearches={recentSearches}
           />
           
-          <SearchFilters />
+          <div className="mt-3">
+            <SearchFilters
+              expandedTerms={expandedTerms}
+              query={searchQuery}
+            />
+          </div>
         </div>
         
         {isSearching && (
-          <SearchLoadingIndicator query={searchQuery} />
+          <div className="px-6">
+            <SearchLoadingIndicator loadingProgress={75} />
+          </div>
         )}
         
         <div 
