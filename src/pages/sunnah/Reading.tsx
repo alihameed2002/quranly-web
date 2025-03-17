@@ -5,7 +5,7 @@ import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookText } from "lucide-react";
-import { fetchHadith, getHadithByIndex } from "@/utils/hadithData";
+import { fetchHadith, getHadithByIndex, getAllHadiths } from "@/utils/hadithData";
 
 const SunnahReading = () => {
   const [loading, setLoading] = useState(true);
@@ -14,6 +14,19 @@ const SunnahReading = () => {
   const [currentHadith, setCurrentHadith] = useState(1);
   const location = useLocation();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Preload hadiths to ensure navigation works
+    const preloadHadiths = async () => {
+      try {
+        await getAllHadiths();
+      } catch (error) {
+        console.error("Failed to preload hadiths:", error);
+      }
+    };
+    
+    preloadHadiths();
+  }, []);
   
   useEffect(() => {
     // Parse collection, book and hadith from URL query parameters

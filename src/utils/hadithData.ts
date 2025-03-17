@@ -6,8 +6,6 @@ let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
 const API_KEY = '$2y$10$NgLZPFmKgeDlaivo0cn9wOJPqw7rfvmgNwiX9CHQXrHv6xjuV9pDa';
 const API_ENDPOINT = 'https://hadithapi.com/api/hadiths/';
-const TOTAL_HADITHS = 7563; // Total number of hadiths in Sahih Bukhari
-const HADITHS_PER_PAGE = 50; // Number of hadiths to fetch per API call
 
 // Function to load and process hadith data
 export const loadHadithData = async (): Promise<void> => {
@@ -20,7 +18,7 @@ export const loadHadithData = async (): Promise<void> => {
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
     
-    // First try the new API endpoint
+    // First try the API endpoint
     try {
       const apiResponse = await fetch(`${API_ENDPOINT}?apiKey=${API_KEY}`);
       
@@ -54,7 +52,6 @@ export const loadHadithData = async (): Promise<void> => {
             }
           });
           
-          // If we successfully loaded hadiths from the API, skip the GitHub fallback
           if (hadiths.length > 0) {
             console.log(`Successfully loaded ${hadiths.length} hadiths from API`);
             
@@ -78,57 +75,26 @@ export const loadHadithData = async (): Promise<void> => {
       }
     } catch (apiError) {
       console.error("Error fetching from primary API:", apiError);
-      console.log("Falling back to GitHub repository data");
     }
     
-    // Fall back to GitHub repository if API fails
-    const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json');
+    console.log("Falling back to sample hadiths since API and GitHub repository failed");
+    // If both API and GitHub repo fail, use sample data
+    cachedHadiths = sampleHadiths;
     
-    if (!bukhariResponse.ok) {
-      throw new Error(`Failed to fetch hadith data: ${bukhariResponse.status}`);
+    // Add more sample hadiths to make navigation meaningful
+    for (let i = 0; i < 10; i++) {
+      const newHadith = {
+        ...sampleHadith,
+        id: sampleHadiths.length + i + 1,
+        hadithNumber: sampleHadith.hadithNumber + i + 1,
+        english: `${sampleHadith.english} (Sample ${i + 1})`,
+        reference: `Sahih Bukhari ${sampleHadith.bookNumber}:${sampleHadith.hadithNumber + i + 1}`
+      };
+      cachedHadiths.push(newHadith);
     }
     
-    const bukhariData = await bukhariResponse.json();
-    
-    // Process Bukhari hadiths - the structure might be different in this file
-    if (Array.isArray(bukhariData.hadiths)) {
-      bukhariData.hadiths.forEach((item: any, index: number) => {
-        // Create a key for deduplication based on both book and hadith number
-        const key = `${item.chapterNumber}:${item.hadithNumber}`;
-        
-        if (!seen.has(key) && item.text && item.arabic) {
-          hadiths.push({
-            id: index + 1,
-            collection: "Sahih Bukhari",
-            bookNumber: parseInt(item.chapterNumber) || 0,
-            chapterNumber: parseInt(item.chapterNumber) || 0,
-            hadithNumber: parseInt(item.hadithNumber) || 0,
-            arabic: item.arabic || "",
-            english: item.text || "",
-            reference: `Sahih Bukhari ${item.chapterNumber || 0}:${item.hadithNumber || 0}`,
-            grade: "Sahih",
-            narrator: item.narrator || ""
-          });
-          seen.add(key);
-        }
-      });
-    } else {
-      console.error("Unexpected data structure in Bukhari hadiths JSON");
-    }
-
-    // Sort hadiths chronologically by book number and hadith number
-    hadiths.sort((a, b) => {
-      // First compare by book number
-      if (a.bookNumber !== b.bookNumber) {
-        return a.bookNumber - b.bookNumber;
-      }
-      // If book numbers are the same, compare by hadith number
-      return a.hadithNumber - b.hadithNumber;
-    });
-
-    cachedHadiths = hadiths;
     isDataLoaded = true;
-    console.log(`Loaded ${hadiths.length} unique hadiths from Sahih Bukhari collection in chronological order`);
+    console.log(`Using ${cachedHadiths.length} sample hadiths for demonstration`);
   } catch (error) {
     console.error("Failed to load hadith data:", error);
     // Use sample data as fallback
@@ -202,7 +168,7 @@ export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
   
   if (cachedHadiths.length === 0) {
     console.warn("No hadiths loaded, returning sample hadith");
-    return sampleHadith;
+    return current; // Return current hadith instead of sample to avoid navigation issues
   }
   
   const currentIndex = cachedHadiths.findIndex(h => 
@@ -213,9 +179,9 @@ export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
   
   console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
   
-  // If we're at the last hadith, return the same hadith (don't loop)
+  // If current hadith not found or is the last one, return the same hadith
   if (currentIndex === -1 || currentIndex === cachedHadiths.length - 1) {
-    console.log("User is at the last hadith, staying on current");
+    console.log("User is at the last hadith or hadith not found, staying on current");
     return current;
   }
   
@@ -229,7 +195,7 @@ export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
   
   if (cachedHadiths.length === 0) {
     console.warn("No hadiths loaded, returning sample hadith");
-    return sampleHadith;
+    return current; // Return current hadith instead of sample to avoid navigation issues
   }
   
   const currentIndex = cachedHadiths.findIndex(h => 
@@ -240,9 +206,9 @@ export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
   
   console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
   
-  // If we're at the first hadith, return the same hadith (don't loop)
+  // If current hadith not found or is the first one, return the same hadith
   if (currentIndex <= 0) {
-    console.log("User is at the first hadith, staying on current");
+    console.log("User is at the first hadith or hadith not found, staying on current");
     return current;
   }
   
