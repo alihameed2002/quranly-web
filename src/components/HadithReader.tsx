@@ -7,7 +7,23 @@ import { useToast } from "@/hooks/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Hadith, sampleHadith } from "@/utils/hadithTypes";
-import { fetchHadith, getNextHadith, getPreviousHadith } from "@/utils/hadithData";
+import { 
+  fetchHadith, 
+  getNextHadith, 
+  getPreviousHadith, 
+  getTotalHadithCount,
+  getHadithIndex,
+  getHadithByIndex
+} from "@/utils/hadithData";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 interface HadithReaderProps {
   className?: string;
@@ -29,6 +45,8 @@ export default function HadithReader({
   const [isLoading, setIsLoading] = useState(true);
   const [pointsEarned, setPointsEarned] = useState(7600);
   const [error, setError] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [totalHadiths, setTotalHadiths] = useState(0);
   
   const { toast } = useToast();
   const location = useLocation();
@@ -38,6 +56,39 @@ export default function HadithReader({
   const searchQuery = location.state?.lastQuery || "";
   const searchResults = location.state?.results || [];
   const scrollPosition = location.state?.scrollPosition || 0;
+  
+  // Load total hadith count
+  useEffect(() => {
+    const loadTotalCount = async () => {
+      try {
+        const count = await getTotalHadithCount();
+        setTotalHadiths(count);
+        console.log(`Total hadiths loaded: ${count}`);
+      } catch (error) {
+        console.error("Failed to load total hadith count:", error);
+      }
+    };
+    
+    loadTotalCount();
+  }, []);
+  
+  // Set current index when hadith changes
+  useEffect(() => {
+    const updateCurrentIndex = async () => {
+      if (hadithData) {
+        const index = await getHadithIndex(
+          hadithData.collection,
+          hadithData.bookNumber,
+          hadithData.hadithNumber
+        );
+        setCurrentIndex(index);
+      }
+    };
+    
+    if (hadithData) {
+      updateCurrentIndex();
+    }
+  }, [hadithData]);
   
   useEffect(() => {
     const loadHadithData = async () => {
@@ -83,6 +134,9 @@ export default function HadithReader({
       setCurrentCollection(nextHadith.collection);
       setCurrentBook(nextHadith.bookNumber);
       setCurrentHadith(nextHadith.hadithNumber);
+      
+      // Update URL to reflect the new hadith
+      navigate(`/sunnah/reading?collection=${encodeURIComponent(nextHadith.collection)}&book=${nextHadith.bookNumber}&hadith=${nextHadith.hadithNumber}`, { replace: true });
     } catch (error) {
       console.error("Error getting next hadith:", error);
       toast({
@@ -101,6 +155,9 @@ export default function HadithReader({
       setCurrentCollection(prevHadith.collection);
       setCurrentBook(prevHadith.bookNumber);
       setCurrentHadith(prevHadith.hadithNumber);
+      
+      // Update URL to reflect the new hadith
+      navigate(`/sunnah/reading?collection=${encodeURIComponent(prevHadith.collection)}&book=${prevHadith.bookNumber}&hadith=${prevHadith.hadithNumber}`, { replace: true });
     } catch (error) {
       console.error("Error getting previous hadith:", error);
       toast({
@@ -108,6 +165,31 @@ export default function HadithReader({
         description: "Could not load the previous hadith.",
         variant: "destructive",
       });
+    }
+  };
+  
+  const goToHadithByIndex = async (index: number) => {
+    if (isLoading) return;
+    
+    try {
+      setIsLoading(true);
+      const hadith = await getHadithByIndex(index);
+      setCurrentCollection(hadith.collection);
+      setCurrentBook(hadith.bookNumber);
+      setCurrentHadith(hadith.hadithNumber);
+      setCurrentIndex(index);
+      
+      // Update URL to reflect the new hadith
+      navigate(`/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`, { replace: true });
+    } catch (error) {
+      console.error("Error getting hadith by index:", error);
+      toast({
+        title: "Error",
+        description: "Could not load the requested hadith.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -133,6 +215,80 @@ export default function HadithReader({
         scrollPosition: scrollPosition
       } 
     });
+  };
+  
+  // Generate pagination items
+  const generatePaginationItems = () => {
+    // If we don't have many hadiths yet, don't show pagination
+    if (totalHadiths <= 1) return null;
+    
+    const items = [];
+    const maxVisiblePages = 3; // Number of page numbers to show
+    
+    // Calculate range of pages to show
+    let startPage = Math.max(0, currentIndex - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(startPage + maxVisiblePages - 1, totalHadiths - 1);
+    
+    // Adjust startPage if we're near the end
+    if (endPage - startPage < maxVisiblePages - 1) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
+    }
+    
+    // Always show first page
+    if (startPage > 0) {
+      items.push(
+        <PaginationItem key="first">
+          <PaginationLink isActive={currentIndex === 0} onClick={() => goToHadithByIndex(0)}>
+            1
+          </PaginationLink>
+        </PaginationItem>
+      );
+      
+      // Add ellipsis if not starting from page 2
+      if (startPage > 1) {
+        items.push(
+          <PaginationItem key="ellipsis1">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+    
+    // Add visible page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink isActive={currentIndex === i} onClick={() => goToHadithByIndex(i)}>
+            {i + 1}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    // Always show last page
+    if (endPage < totalHadiths - 1) {
+      // Add ellipsis if not ending at second-to-last page
+      if (endPage < totalHadiths - 2) {
+        items.push(
+          <PaginationItem key="ellipsis2">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+      
+      items.push(
+        <PaginationItem key="last">
+          <PaginationLink 
+            isActive={currentIndex === totalHadiths - 1} 
+            onClick={() => goToHadithByIndex(totalHadiths - 1)}
+          >
+            {totalHadiths}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return items;
   };
   
   if (isLoading && !hadithData) {
@@ -209,6 +365,28 @@ export default function HadithReader({
           <span className="text-white font-medium">Next</span>
           <ChevronRight className="h-6 w-6 text-white ml-2" />
         </button>
+      </div>
+      
+      <div className="px-6">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious 
+                onClick={goToPrevHadith} 
+                className="glass-card text-white border-white/20 hover:bg-white/10 hover:text-white" 
+              />
+            </PaginationItem>
+            
+            {generatePaginationItems()}
+            
+            <PaginationItem>
+              <PaginationNext 
+                onClick={goToNextHadith} 
+                className="glass-card text-white border-white/20 hover:bg-white/10 hover:text-white"
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </div>
       
       <div className="text-center text-sm text-app-text-secondary">

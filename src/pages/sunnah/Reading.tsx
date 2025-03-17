@@ -3,8 +3,9 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { BookText } from "lucide-react";
+import { fetchHadith, getHadithByIndex } from "@/utils/hadithData";
 
 const SunnahReading = () => {
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,7 @@ const SunnahReading = () => {
   const [currentBook, setCurrentBook] = useState(1);
   const [currentHadith, setCurrentHadith] = useState(1);
   const location = useLocation();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Parse collection, book and hadith from URL query parameters
@@ -19,34 +21,54 @@ const SunnahReading = () => {
     const collectionParam = params.get('collection');
     const bookParam = params.get('book');
     const hadithParam = params.get('hadith');
+    const indexParam = params.get('index');
     
-    // Only allow Sahih Bukhari collection for now
-    if (collectionParam && collectionParam === "Sahih Bukhari") {
-      setCurrentCollection(collectionParam);
-    } else {
-      setCurrentCollection("Sahih Bukhari");
-    }
-    
-    if (bookParam) {
-      const bookNum = Number(bookParam);
-      if (!isNaN(bookNum) && bookNum >= 1) {
-        setCurrentBook(bookNum);
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Handle direct index navigation
+        if (indexParam) {
+          const index = parseInt(indexParam);
+          if (!isNaN(index) && index >= 0) {
+            const hadith = await getHadithByIndex(index);
+            setCurrentCollection(hadith.collection);
+            setCurrentBook(hadith.bookNumber);
+            setCurrentHadith(hadith.hadithNumber);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Only allow Sahih Bukhari collection for now
+        if (collectionParam && collectionParam === "Sahih Bukhari") {
+          setCurrentCollection(collectionParam);
+        } else {
+          setCurrentCollection("Sahih Bukhari");
+        }
+        
+        if (bookParam) {
+          const bookNum = Number(bookParam);
+          if (!isNaN(bookNum) && bookNum >= 1) {
+            setCurrentBook(bookNum);
+          }
+        }
+        
+        if (hadithParam) {
+          const hadithNum = Number(hadithParam);
+          if (!isNaN(hadithNum) && hadithNum >= 1) {
+            setCurrentHadith(hadithNum);
+          }
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error loading hadith data:", error);
+        setLoading(false);
       }
-    }
+    };
     
-    if (hadithParam) {
-      const hadithNum = Number(hadithParam);
-      if (!isNaN(hadithNum) && hadithNum >= 1) {
-        setCurrentHadith(hadithNum);
-      }
-    }
-    
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-    
-    return () => clearTimeout(timer);
+    loadData();
   }, [location.search]);
   
   if (loading) {

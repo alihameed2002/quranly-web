@@ -4,20 +4,25 @@ import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 // This will be replaced with actual data loaded from the Github repository
 let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
+const API_KEY = '$2y$10$NgLZPFmKgeDlaivo0cn9wOJPqw7rfvmgNwiX9CHQXrHv6xjuV9pDa';
+const TOTAL_HADITHS = 7563; // Total number of hadiths in Sahih Bukhari
+const HADITHS_PER_PAGE = 50; // Number of hadiths to fetch per API call
 
 // Function to load and process hadith data
 export const loadHadithData = async (): Promise<void> => {
   if (isDataLoaded) return;
 
   try {
-    // Load Bukhari hadiths from the correct JSON file with full collection
-    const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json');
-    const bukhariData = await bukhariResponse.json();
+    console.log("Starting to load Hadith data from API...");
     
     // Process and deduplicate hadiths
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
-
+    
+    // We'll use the Github repository data as it's more reliable and complete
+    const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json');
+    const bukhariData = await bukhariResponse.json();
+    
     // Process Bukhari hadiths - the structure might be different in this file
     if (Array.isArray(bukhariData.hadiths)) {
       bukhariData.hadiths.forEach((item: any, index: number) => {
@@ -64,6 +69,29 @@ export const loadHadithData = async (): Promise<void> => {
   }
 };
 
+// Function to get all hadiths (useful for pagination)
+export const getAllHadiths = async (): Promise<Hadith[]> => {
+  await loadHadithData();
+  return cachedHadiths;
+};
+
+// Function to get total number of hadiths
+export const getTotalHadithCount = async (): Promise<number> => {
+  await loadHadithData();
+  return cachedHadiths.length;
+};
+
+// Function to get a specific hadith by index (for pagination)
+export const getHadithByIndex = async (index: number): Promise<Hadith> => {
+  await loadHadithData();
+  
+  if (cachedHadiths.length === 0) return sampleHadith;
+  
+  // Ensure index is within bounds
+  const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
+  return cachedHadiths[safeIndex];
+};
+
 // Function to get a specific hadith
 export const fetchHadith = async (collection: string, bookNumber: number, hadithNumber: number): Promise<Hadith> => {
   await loadHadithData();
@@ -75,6 +103,19 @@ export const fetchHadith = async (collection: string, bookNumber: number, hadith
   );
   
   return hadith || sampleHadith;
+};
+
+// Function to get hadith index from collection, book, and hadith number
+export const getHadithIndex = async (collection: string, bookNumber: number, hadithNumber: number): Promise<number> => {
+  await loadHadithData();
+  
+  const index = cachedHadiths.findIndex(h => 
+    h.collection === collection && 
+    h.bookNumber === bookNumber && 
+    h.hadithNumber === hadithNumber
+  );
+  
+  return index >= 0 ? index : 0;
 };
 
 // Function to search hadiths
