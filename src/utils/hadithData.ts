@@ -1,3 +1,4 @@
+
 import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 
 // This will be replaced with actual data loaded from the Github repository
@@ -9,34 +10,38 @@ export const loadHadithData = async (): Promise<void> => {
   if (isDataLoaded) return;
 
   try {
-    // Load Bukhari hadiths only
-    const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/bukhari_english.json');
+    // Load Bukhari hadiths from the correct JSON file with full collection
+    const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json');
     const bukhariData = await bukhariResponse.json();
     
     // Process and deduplicate hadiths
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
 
-    // Process Bukhari hadiths
-    bukhariData.forEach((item: any, index: number) => {
-      // Create a key for deduplication
-      const key = `${item.text}`;
-      
-      if (!seen.has(key) && item.text && item.text_ar) {
-        hadiths.push({
-          id: index + 1,
-          collection: "Sahih Bukhari",
-          bookNumber: item.book || 0,
-          chapterNumber: item.chapter || 0,
-          hadithNumber: item.hadith || 0,
-          arabic: item.text_ar || "",
-          english: item.text || "",
-          reference: `Sahih Bukhari ${item.book || 0}:${item.hadith || 0}`,
-          grade: item.grade || "Sahih"
-        });
-        seen.add(key);
-      }
-    });
+    // Process Bukhari hadiths - the structure might be different in this file
+    if (Array.isArray(bukhariData.hadiths)) {
+      bukhariData.hadiths.forEach((item: any, index: number) => {
+        // Create a key for deduplication based on both book and hadith number
+        const key = `${item.chapterNumber}:${item.hadithNumber}`;
+        
+        if (!seen.has(key) && item.text && item.arabic) {
+          hadiths.push({
+            id: index + 1,
+            collection: "Sahih Bukhari",
+            bookNumber: parseInt(item.chapterNumber) || 0,
+            chapterNumber: parseInt(item.chapterNumber) || 0,
+            hadithNumber: parseInt(item.hadithNumber) || 0,
+            arabic: item.arabic || "",
+            english: item.text || "",
+            reference: `Sahih Bukhari ${item.chapterNumber || 0}:${item.hadithNumber || 0}`,
+            grade: "Sahih"
+          });
+          seen.add(key);
+        }
+      });
+    } else {
+      console.error("Unexpected data structure in Bukhari hadiths JSON");
+    }
 
     // Sort hadiths chronologically by book number and hadith number
     hadiths.sort((a, b) => {
