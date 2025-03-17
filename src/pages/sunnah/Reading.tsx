@@ -32,6 +32,7 @@ const SunnahReading = () => {
           const index = parseInt(indexParam);
           if (!isNaN(index) && index >= 0) {
             const hadith = await getHadithByIndex(index);
+            console.log(`Loaded hadith by index ${index}:`, hadith);
             setCurrentCollection(hadith.collection);
             setCurrentBook(hadith.bookNumber);
             setCurrentHadith(hadith.hadithNumber);
