@@ -47,6 +47,8 @@ export default function HadithReader({
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [totalHadiths, setTotalHadiths] = useState(0);
+  const [isFirstHadith, setIsFirstHadith] = useState(false);
+  const [isLastHadith, setIsLastHadith] = useState(false);
   
   const { toast } = useToast();
   const location = useLocation();
@@ -82,13 +84,19 @@ export default function HadithReader({
           hadithData.hadithNumber
         );
         setCurrentIndex(index);
+        
+        // Check if this is the first or last hadith
+        setIsFirstHadith(index === 0);
+        setIsLastHadith(index === totalHadiths - 1);
+        
+        console.log(`Current index: ${index}, isFirst: ${index === 0}, isLast: ${index === totalHadiths - 1}`);
       }
     };
     
     if (hadithData) {
       updateCurrentIndex();
     }
-  }, [hadithData]);
+  }, [hadithData, totalHadiths]);
   
   useEffect(() => {
     const loadHadithData = async () => {
@@ -127,10 +135,19 @@ export default function HadithReader({
   }, [initialCollection, initialBook, initialHadith]);
   
   const goToNextHadith = async () => {
-    if (isLoading || !hadithData) return;
+    if (isLoading || !hadithData || isLastHadith) return;
     
     try {
+      setIsLoading(true);
       const nextHadith = await getNextHadith(hadithData);
+      
+      if (nextHadith.bookNumber === hadithData.bookNumber && 
+          nextHadith.hadithNumber === hadithData.hadithNumber) {
+        // This is the last hadith, stay on this page
+        setIsLoading(false);
+        return;
+      }
+      
       setCurrentCollection(nextHadith.collection);
       setCurrentBook(nextHadith.bookNumber);
       setCurrentHadith(nextHadith.hadithNumber);
@@ -144,14 +161,24 @@ export default function HadithReader({
         description: "Could not load the next hadith.",
         variant: "destructive",
       });
+      setIsLoading(false);
     }
   };
   
   const goToPrevHadith = async () => {
-    if (isLoading || !hadithData) return;
+    if (isLoading || !hadithData || isFirstHadith) return;
     
     try {
+      setIsLoading(true);
       const prevHadith = await getPreviousHadith(hadithData);
+      
+      if (prevHadith.bookNumber === hadithData.bookNumber && 
+          prevHadith.hadithNumber === hadithData.hadithNumber) {
+        // This is the first hadith, stay on this page
+        setIsLoading(false);
+        return;
+      }
+      
       setCurrentCollection(prevHadith.collection);
       setCurrentBook(prevHadith.bookNumber);
       setCurrentHadith(prevHadith.hadithNumber);
@@ -165,6 +192,7 @@ export default function HadithReader({
         description: "Could not load the previous hadith.",
         variant: "destructive",
       });
+      setIsLoading(false);
     }
   };
   
@@ -337,10 +365,10 @@ export default function HadithReader({
       <div className="w-full flex items-center justify-between px-6">
         <button 
           onClick={goToPrevHadith}
-          disabled={isLoading}
+          disabled={isLoading || isFirstHadith}
           className={cn(
             "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
-            !isLoading ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
+            !(isLoading || isFirstHadith) ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
           )}
         >
           <ChevronLeft className="h-6 w-6 text-white mr-2" />
@@ -356,10 +384,10 @@ export default function HadithReader({
         
         <button 
           onClick={goToNextHadith}
-          disabled={isLoading}
+          disabled={isLoading || isLastHadith}
           className={cn(
             "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
-            !isLoading ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
+            !(isLoading || isLastHadith) ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
           )}
         >
           <span className="text-white font-medium">Next</span>
@@ -373,7 +401,11 @@ export default function HadithReader({
             <PaginationItem>
               <PaginationPrevious 
                 onClick={goToPrevHadith} 
-                className="glass-card text-white border-white/20 hover:bg-white/10 hover:text-white" 
+                disabled={isFirstHadith}
+                className={cn(
+                  "glass-card text-white border-white/20",
+                  !isFirstHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed"
+                )}
               />
             </PaginationItem>
             
@@ -382,7 +414,11 @@ export default function HadithReader({
             <PaginationItem>
               <PaginationNext 
                 onClick={goToNextHadith} 
-                className="glass-card text-white border-white/20 hover:bg-white/10 hover:text-white"
+                disabled={isLastHadith}
+                className={cn(
+                  "glass-card text-white border-white/20",
+                  !isLastHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed"
+                )}
               />
             </PaginationItem>
           </PaginationContent>

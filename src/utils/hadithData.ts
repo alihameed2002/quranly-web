@@ -1,10 +1,11 @@
 
 import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 
-// This will be replaced with actual data loaded from the Github repository
+// This will be replaced with actual data loaded from the Hadith API
 let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
 const API_KEY = '$2y$10$NgLZPFmKgeDlaivo0cn9wOJPqw7rfvmgNwiX9CHQXrHv6xjuV9pDa';
+const API_ENDPOINT = 'https://hadithapi.com/api/hadiths/';
 const TOTAL_HADITHS = 7563; // Total number of hadiths in Sahih Bukhari
 const HADITHS_PER_PAGE = 50; // Number of hadiths to fetch per API call
 
@@ -19,7 +20,68 @@ export const loadHadithData = async (): Promise<void> => {
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
     
-    // We'll use the Github repository data as it's more reliable and complete
+    // First try the new API endpoint
+    try {
+      const apiResponse = await fetch(`${API_ENDPOINT}?apiKey=${API_KEY}`);
+      
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json();
+        console.log("API response data structure:", Object.keys(apiData));
+        
+        if (apiData.data && Array.isArray(apiData.data)) {
+          console.log(`Retrieved ${apiData.data.length} hadiths from API`);
+          
+          apiData.data.forEach((item: any, index: number) => {
+            // Create a key for deduplication based on both book and hadith number
+            const bookNumber = item.bookNumber || item.chapterNumber || 0;
+            const hadithNumber = item.hadithNumber || index + 1;
+            const key = `${bookNumber}:${hadithNumber}`;
+            
+            if (!seen.has(key) && (item.text || item.englishText) && (item.arabic || item.arabicText)) {
+              hadiths.push({
+                id: index + 1,
+                collection: "Sahih Bukhari",
+                bookNumber: parseInt(bookNumber) || 0,
+                chapterNumber: parseInt(bookNumber) || 0,
+                hadithNumber: parseInt(hadithNumber) || 0,
+                arabic: item.arabic || item.arabicText || "",
+                english: item.text || item.englishText || "",
+                reference: `Sahih Bukhari ${bookNumber || 0}:${hadithNumber || 0}`,
+                grade: item.grade || "Sahih",
+                narrator: item.narrator || ""
+              });
+              seen.add(key);
+            }
+          });
+          
+          // If we successfully loaded hadiths from the API, skip the GitHub fallback
+          if (hadiths.length > 0) {
+            console.log(`Successfully loaded ${hadiths.length} hadiths from API`);
+            
+            // Sort hadiths chronologically by book number and hadith number
+            hadiths.sort((a, b) => {
+              // First compare by book number
+              if (a.bookNumber !== b.bookNumber) {
+                return a.bookNumber - b.bookNumber;
+              }
+              // If book numbers are the same, compare by hadith number
+              return a.hadithNumber - b.hadithNumber;
+            });
+            
+            cachedHadiths = hadiths;
+            isDataLoaded = true;
+            return;
+          }
+        }
+      } else {
+        console.warn(`API response was not ok (status: ${apiResponse.status}), falling back to GitHub data`);
+      }
+    } catch (apiError) {
+      console.error("Error fetching from primary API:", apiError);
+      console.log("Falling back to GitHub repository data");
+    }
+    
+    // Fall back to GitHub repository if API fails
     const bukhariResponse = await fetch('https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json');
     
     if (!bukhariResponse.ok) {
@@ -44,7 +106,8 @@ export const loadHadithData = async (): Promise<void> => {
             arabic: item.arabic || "",
             english: item.text || "",
             reference: `Sahih Bukhari ${item.chapterNumber || 0}:${item.hadithNumber || 0}`,
-            grade: "Sahih"
+            grade: "Sahih",
+            narrator: item.narrator || ""
           });
           seen.add(key);
         }
@@ -133,7 +196,7 @@ export const getHadithIndex = async (collection: string, bookNumber: number, had
   return index >= 0 ? index : 0;
 };
 
-// Fixed: Function to get the next hadith in sequence
+// Function to get the next hadith in sequence
 export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
   await loadHadithData();
   
@@ -148,17 +211,19 @@ export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
     h.hadithNumber === current.hadithNumber
   );
   
-  // If index not found or it's the last hadith, loop to first hadith
+  console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
+  
+  // If we're at the last hadith, return the same hadith (don't loop)
   if (currentIndex === -1 || currentIndex === cachedHadiths.length - 1) {
-    console.log("Returning first hadith (loop from end to beginning)");
-    return cachedHadiths[0];
+    console.log("User is at the last hadith, staying on current");
+    return current;
   }
   
   console.log(`Moving from hadith at index ${currentIndex} to ${currentIndex + 1}`);
   return cachedHadiths[currentIndex + 1];
 };
 
-// Fixed: Function to get the previous hadith in sequence
+// Function to get the previous hadith in sequence
 export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
   await loadHadithData();
   
@@ -173,10 +238,12 @@ export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
     h.hadithNumber === current.hadithNumber
   );
   
-  // If index not found or it's the first hadith, loop to last hadith
+  console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
+  
+  // If we're at the first hadith, return the same hadith (don't loop)
   if (currentIndex <= 0) {
-    console.log("Returning last hadith (loop from beginning to end)");
-    return cachedHadiths[cachedHadiths.length - 1];
+    console.log("User is at the first hadith, staying on current");
+    return current;
   }
   
   console.log(`Moving from hadith at index ${currentIndex} to ${currentIndex - 1}`);

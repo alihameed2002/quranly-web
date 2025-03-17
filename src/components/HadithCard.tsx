@@ -38,6 +38,11 @@ export default function HadithCard({
     });
   };
 
+  // Format the book name for display
+  const getBookName = () => {
+    return `Book of ${hadith.bookNumber}: ${hadith.reference?.split(" ")[2] || ""}`;
+  };
+
   if (minimized) {
     return (
       <div 
@@ -68,7 +73,11 @@ export default function HadithCard({
             {hadith.collection}
           </h2>
           <p className="text-sm text-app-text-secondary">
-            Book {hadith.bookNumber}, Hadith {hadith.hadithNumber}
+            {getBookName()}
+          </p>
+          <p className="text-sm text-app-green">
+            Hadith #{hadith.hadithNumber}
+            {hadith.narrator && ` • Narrated by ${hadith.narrator}`}
           </p>
         </div>
         

@@ -60,6 +60,14 @@ const SunnahReading = () => {
           if (!isNaN(hadithNum) && hadithNum >= 1) {
             setCurrentHadith(hadithNum);
           }
+        } else {
+          // If no hadith is specified, default to hadith 1
+          setCurrentHadith(1);
+        }
+        
+        // If we have no parameters at all, update the URL with the defaults
+        if (!collectionParam && !bookParam && !hadithParam && !indexParam) {
+          navigate(`/sunnah/reading?collection=Sahih%20Bukhari&book=1&hadith=1`, { replace: true });
         }
         
         setLoading(false);
@@ -70,7 +78,7 @@ const SunnahReading = () => {
     };
     
     loadData();
-  }, [location.search]);
+  }, [location.search, navigate]);
   
   if (loading) {
     return (
