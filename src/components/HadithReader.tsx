@@ -1,4 +1,3 @@
-
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HadithCard from "./HadithCard";
@@ -59,7 +58,6 @@ export default function HadithReader({
   const searchResults = location.state?.results || [];
   const scrollPosition = location.state?.scrollPosition || 0;
   
-  // Load total hadith count
   useEffect(() => {
     const loadTotalCount = async () => {
       try {
@@ -74,7 +72,6 @@ export default function HadithReader({
     loadTotalCount();
   }, []);
   
-  // Set current index when hadith changes
   useEffect(() => {
     const updateCurrentIndex = async () => {
       if (hadithData) {
@@ -85,7 +82,6 @@ export default function HadithReader({
         );
         setCurrentIndex(index);
         
-        // Check if this is the first or last hadith
         setIsFirstHadith(index === 0);
         setIsLastHadith(index === totalHadiths - 1);
         
@@ -143,7 +139,6 @@ export default function HadithReader({
       
       if (nextHadith.bookNumber === hadithData.bookNumber && 
           nextHadith.hadithNumber === hadithData.hadithNumber) {
-        // This is the last hadith, stay on this page
         setIsLoading(false);
         return;
       }
@@ -152,7 +147,6 @@ export default function HadithReader({
       setCurrentBook(nextHadith.bookNumber);
       setCurrentHadith(nextHadith.hadithNumber);
       
-      // Update URL to reflect the new hadith
       navigate(`/sunnah/reading?collection=${encodeURIComponent(nextHadith.collection)}&book=${nextHadith.bookNumber}&hadith=${nextHadith.hadithNumber}`, { replace: true });
     } catch (error) {
       console.error("Error getting next hadith:", error);
@@ -174,7 +168,6 @@ export default function HadithReader({
       
       if (prevHadith.bookNumber === hadithData.bookNumber && 
           prevHadith.hadithNumber === hadithData.hadithNumber) {
-        // This is the first hadith, stay on this page
         setIsLoading(false);
         return;
       }
@@ -183,7 +176,6 @@ export default function HadithReader({
       setCurrentBook(prevHadith.bookNumber);
       setCurrentHadith(prevHadith.hadithNumber);
       
-      // Update URL to reflect the new hadith
       navigate(`/sunnah/reading?collection=${encodeURIComponent(prevHadith.collection)}&book=${prevHadith.bookNumber}&hadith=${prevHadith.hadithNumber}`, { replace: true });
     } catch (error) {
       console.error("Error getting previous hadith:", error);
@@ -207,7 +199,6 @@ export default function HadithReader({
       setCurrentHadith(hadith.hadithNumber);
       setCurrentIndex(index);
       
-      // Update URL to reflect the new hadith
       navigate(`/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`, { replace: true });
     } catch (error) {
       console.error("Error getting hadith by index:", error);
@@ -245,24 +236,19 @@ export default function HadithReader({
     });
   };
   
-  // Generate pagination items
   const generatePaginationItems = () => {
-    // If we don't have many hadiths yet, don't show pagination
     if (totalHadiths <= 1) return null;
     
     const items = [];
-    const maxVisiblePages = 3; // Number of page numbers to show
+    const maxVisiblePages = 3;
     
-    // Calculate range of pages to show
     let startPage = Math.max(0, currentIndex - Math.floor(maxVisiblePages / 2));
     const endPage = Math.min(startPage + maxVisiblePages - 1, totalHadiths - 1);
     
-    // Adjust startPage if we're near the end
     if (endPage - startPage < maxVisiblePages - 1) {
       startPage = Math.max(0, endPage - maxVisiblePages + 1);
     }
     
-    // Always show first page
     if (startPage > 0) {
       items.push(
         <PaginationItem key="first">
@@ -272,7 +258,6 @@ export default function HadithReader({
         </PaginationItem>
       );
       
-      // Add ellipsis if not starting from page 2
       if (startPage > 1) {
         items.push(
           <PaginationItem key="ellipsis1">
@@ -282,7 +267,6 @@ export default function HadithReader({
       }
     }
     
-    // Add visible page numbers
     for (let i = startPage; i <= endPage; i++) {
       items.push(
         <PaginationItem key={i}>
@@ -293,9 +277,7 @@ export default function HadithReader({
       );
     }
     
-    // Always show last page
     if (endPage < totalHadiths - 1) {
-      // Add ellipsis if not ending at second-to-last page
       if (endPage < totalHadiths - 2) {
         items.push(
           <PaginationItem key="ellipsis2">
@@ -400,11 +382,10 @@ export default function HadithReader({
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious 
-                onClick={goToPrevHadith} 
-                disabled={isFirstHadith}
+                onClick={!isFirstHadith ? goToPrevHadith : undefined} 
                 className={cn(
                   "glass-card text-white border-white/20",
-                  !isFirstHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed"
+                  !isFirstHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed pointer-events-none"
                 )}
               />
             </PaginationItem>
@@ -413,11 +394,10 @@ export default function HadithReader({
             
             <PaginationItem>
               <PaginationNext 
-                onClick={goToNextHadith} 
-                disabled={isLastHadith}
+                onClick={!isLastHadith ? goToNextHadith : undefined} 
                 className={cn(
                   "glass-card text-white border-white/20",
-                  !isLastHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed"
+                  !isLastHadith ? "hover:bg-white/10 hover:text-white" : "opacity-50 cursor-not-allowed pointer-events-none"
                 )}
               />
             </PaginationItem>
