@@ -40,7 +40,7 @@ export default function HadithCard({
 
   // Format the book name for display
   const getBookName = () => {
-    return `Book of ${hadith.bookNumber}: ${hadith.reference?.split(" ")[2] || ""}`;
+    return `Book ${hadith.bookNumber}`;
   };
 
   if (minimized) {
@@ -53,6 +53,7 @@ export default function HadithCard({
           <h3 className="text-white font-medium">{hadith.collection}</h3>
           <p className="text-app-text-secondary text-sm">
             Book {hadith.bookNumber} : Hadith {hadith.hadithNumber}
+            {hadith.narrator && ` • ${hadith.narrator}`}
           </p>
         </div>
         <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">

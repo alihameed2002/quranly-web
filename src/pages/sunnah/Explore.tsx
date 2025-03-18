@@ -3,13 +3,15 @@ import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookText } from "lucide-react";
+import { BookText, Search } from "lucide-react";
 import { searchHadith } from "@/utils/hadithData";
 import { Hadith } from "@/utils/hadithTypes";
 import SearchBar from "@/components/search/SearchBar";
 import SearchFilters from "@/components/search/SearchFilters";
 import SearchLoadingIndicator from "@/components/search/SearchLoadingIndicator";
 import SunnahSearchResults from "@/components/search/SunnahSearchResults";
+import HadithChapterBrowser from "@/components/HadithChapterBrowser";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const SunnahExplore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -18,6 +20,7 @@ const SunnahExplore = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState("search");
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   
   const location = useLocation();
@@ -31,6 +34,7 @@ const SunnahExplore = () => {
       if (lastQuery) {
         console.log("Restoring previous search:", lastQuery);
         setSearchQuery(lastQuery);
+        setActiveTab("search");
       }
       
       if (results && Array.isArray(results)) {
@@ -76,6 +80,7 @@ const SunnahExplore = () => {
     }
     
     setIsSearching(true);
+    setActiveTab("search");
     
     try {
       const results = await searchHadith(queryToUse);
@@ -130,41 +135,58 @@ const SunnahExplore = () => {
         </div>
         
         <div className="px-6">
-          <SearchBar 
-            query={searchQuery}
-            setQuery={setSearchQuery}
-            handleSearch={handleSearch}
-            isSearching={isSearching}
-            isInitializing={isInitializing}
-            recentSearches={recentSearches}
-          />
-          
-          <div className="mt-3">
-            <SearchFilters
-              expandedTerms={expandedTerms}
-              query={searchQuery}
-            />
-          </div>
-        </div>
-        
-        {isSearching && (
-          <div className="px-6">
-            <SearchLoadingIndicator loadingProgress={75} />
-          </div>
-        )}
-        
-        <div 
-          className="px-6 pb-4 overflow-y-auto"
-          ref={resultsContainerRef}
-        >
-          <SunnahSearchResults
-            results={searchResults}
-            isSearching={isSearching}
-            query={searchQuery}
-            isInitializing={isInitializing}
-            navigateToHadith={navigateToHadith}
-            handleSearch={handleSearch}
-          />
+          <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="glass-card w-full mb-4 bg-white/5">
+              <TabsTrigger value="search" className="flex-1">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </TabsTrigger>
+              <TabsTrigger value="browse" className="flex-1">
+                <BookText className="h-4 w-4 mr-2" />
+                Browse
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="search" className="space-y-4">
+              <SearchBar 
+                query={searchQuery}
+                setQuery={setSearchQuery}
+                handleSearch={handleSearch}
+                isSearching={isSearching}
+                isInitializing={isInitializing}
+                recentSearches={recentSearches}
+              />
+              
+              <div className="mt-3">
+                <SearchFilters
+                  expandedTerms={expandedTerms}
+                  query={searchQuery}
+                />
+              </div>
+              
+              {isSearching && (
+                <SearchLoadingIndicator loadingProgress={75} />
+              )}
+              
+              <div 
+                className="pb-4 overflow-y-auto"
+                ref={resultsContainerRef}
+              >
+                <SunnahSearchResults
+                  results={searchResults}
+                  isSearching={isSearching}
+                  query={searchQuery}
+                  isInitializing={isInitializing}
+                  navigateToHadith={navigateToHadith}
+                  handleSearch={handleSearch}
+                />
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="browse">
+              <HadithChapterBrowser />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       

@@ -1,13 +1,13 @@
 
 import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 
-// This will be replaced with actual data loaded from the Hadith API
+// This will store all loaded hadiths from the API
 let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
 const API_KEY = '$2y$10$NgLZPFmKgeDlaivo0cn9wOJPqw7rfvmgNwiX9CHQXrHv6xjuV9pDa';
 const API_ENDPOINT = 'https://hadithapi.com/api/hadiths/';
 
-// Function to load and process hadith data
+// Function to load and process hadith data with pagination
 export const loadHadithData = async (): Promise<void> => {
   if (isDataLoaded && cachedHadiths.length > 0) return;
 
@@ -18,67 +18,97 @@ export const loadHadithData = async (): Promise<void> => {
     const hadiths: Hadith[] = [];
     const seen = new Set<string>();
     
-    // First try the API endpoint
-    try {
-      const apiResponse = await fetch(`${API_ENDPOINT}?apiKey=${API_KEY}`);
-      
-      if (apiResponse.ok) {
-        const apiData = await apiResponse.json();
-        console.log("API response data structure:", Object.keys(apiData));
+    // Paginate through the API to get all hadiths
+    let page = 1;
+    let hasMorePages = true;
+    const pageSize = 100; // Number of hadiths per page
+    
+    while (hasMorePages) {
+      try {
+        const apiUrl = `${API_ENDPOINT}?apiKey=${API_KEY}&book=sahih-bukhari&paginate=${pageSize}&page=${page}`;
+        console.log(`Fetching page ${page} of hadiths...`);
         
-        if (apiData.data && Array.isArray(apiData.data)) {
-          console.log(`Retrieved ${apiData.data.length} hadiths from API`);
+        const apiResponse = await fetch(apiUrl);
+        
+        if (apiResponse.ok) {
+          const apiData = await apiResponse.json();
           
-          apiData.data.forEach((item: any, index: number) => {
-            // Create a key for deduplication based on both book and hadith number
-            const bookNumber = item.bookNumber || item.chapterNumber || 0;
-            const hadithNumber = item.hadithNumber || index + 1;
-            const key = `${bookNumber}:${hadithNumber}`;
+          if (apiData.data && Array.isArray(apiData.data)) {
+            console.log(`Retrieved ${apiData.data.length} hadiths from API (page ${page})`);
             
-            if (!seen.has(key) && (item.text || item.englishText) && (item.arabic || item.arabicText)) {
-              hadiths.push({
-                id: index + 1,
-                collection: "Sahih Bukhari",
-                bookNumber: parseInt(bookNumber) || 0,
-                chapterNumber: parseInt(bookNumber) || 0,
-                hadithNumber: parseInt(hadithNumber) || 0,
-                arabic: item.arabic || item.arabicText || "",
-                english: item.text || item.englishText || "",
-                reference: `Sahih Bukhari ${bookNumber || 0}:${hadithNumber || 0}`,
-                grade: item.grade || "Sahih",
-                narrator: item.narrator || ""
-              });
-              seen.add(key);
+            if (apiData.data.length === 0) {
+              hasMorePages = false;
+              break;
             }
-          });
-          
-          if (hadiths.length > 0) {
-            console.log(`Successfully loaded ${hadiths.length} hadiths from API`);
             
-            // Sort hadiths chronologically by book number and hadith number
-            hadiths.sort((a, b) => {
-              // First compare by book number
-              if (a.bookNumber !== b.bookNumber) {
-                return a.bookNumber - b.bookNumber;
+            apiData.data.forEach((item: any, index: number) => {
+              // Create a key for deduplication based on both book and hadith number
+              const bookNumber = item.bookNumber || item.chapterNumber || 0;
+              const hadithNumber = item.hadithNumber || ((page - 1) * pageSize + index + 1);
+              const key = `${bookNumber}:${hadithNumber}`;
+              
+              if (!seen.has(key) && (item.text || item.englishText) && (item.arabic || item.arabicText)) {
+                hadiths.push({
+                  id: (page - 1) * pageSize + index + 1,
+                  collection: "Sahih Bukhari",
+                  bookNumber: parseInt(bookNumber) || 0,
+                  chapterNumber: parseInt(bookNumber) || 0,
+                  hadithNumber: parseInt(hadithNumber) || 0,
+                  arabic: item.arabic || item.arabicText || "",
+                  english: item.text || item.englishText || "",
+                  reference: `Sahih Bukhari ${bookNumber || 0}:${hadithNumber || 0}`,
+                  grade: item.grade || "Sahih",
+                  narrator: item.narrator || ""
+                });
+                seen.add(key);
               }
-              // If book numbers are the same, compare by hadith number
-              return a.hadithNumber - b.hadithNumber;
             });
             
-            cachedHadiths = hadiths;
-            isDataLoaded = true;
-            return;
+            // Check if we should continue paginating
+            if (apiData.meta && apiData.meta.pagination) {
+              const { current_page, last_page } = apiData.meta.pagination;
+              if (current_page >= last_page) {
+                hasMorePages = false;
+              } else {
+                page++;
+              }
+            } else {
+              // If pagination info is missing, assume no more pages
+              hasMorePages = false;
+            }
+          } else {
+            hasMorePages = false;
           }
+        } else {
+          console.warn(`API response was not ok (status: ${apiResponse.status}), halting pagination`);
+          hasMorePages = false;
         }
-      } else {
-        console.warn(`API response was not ok (status: ${apiResponse.status}), falling back to GitHub data`);
+      } catch (pageError) {
+        console.error(`Error fetching page ${page}:`, pageError);
+        hasMorePages = false;
       }
-    } catch (apiError) {
-      console.error("Error fetching from primary API:", apiError);
     }
     
-    console.log("Falling back to sample hadiths since API and GitHub repository failed");
-    // If both API and GitHub repo fail, use sample data
+    if (hadiths.length > 0) {
+      console.log(`Successfully loaded ${hadiths.length} hadiths from API`);
+      
+      // Sort hadiths chronologically by book number and hadith number
+      hadiths.sort((a, b) => {
+        // First compare by book number
+        if (a.bookNumber !== b.bookNumber) {
+          return a.bookNumber - b.bookNumber;
+        }
+        // If book numbers are the same, compare by hadith number
+        return a.hadithNumber - b.hadithNumber;
+        });
+      
+      cachedHadiths = hadiths;
+      isDataLoaded = true;
+      return;
+    }
+    
+    console.log("Failed to load hadiths from API, using sample data instead");
+    // If API fails, use sample data
     cachedHadiths = sampleHadiths;
     
     // Add more sample hadiths to make navigation meaningful
@@ -124,6 +154,39 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
   // Ensure index is within bounds
   const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
   return cachedHadiths[safeIndex];
+};
+
+// Function to get all hadith chapters/books
+export const getHadithChapters = async (): Promise<{id: number, name: string, hadithCount: number}[]> => {
+  await loadHadithData();
+  
+  if (cachedHadiths.length === 0) return [];
+  
+  // Group hadiths by book number
+  const bookMap = new Map<number, number>();
+  
+  cachedHadiths.forEach(hadith => {
+    if (!bookMap.has(hadith.bookNumber)) {
+      bookMap.set(hadith.bookNumber, 1);
+    } else {
+      bookMap.set(hadith.bookNumber, (bookMap.get(hadith.bookNumber) || 0) + 1);
+    }
+  });
+  
+  // Convert to array of chapter objects
+  return Array.from(bookMap.entries()).map(([bookNumber, count]) => ({
+    id: bookNumber,
+    name: `Book ${bookNumber}`,
+    hadithCount: count
+  })).sort((a, b) => a.id - b.id);
+};
+
+// Function to get hadiths for a specific chapter/book
+export const getHadithsByChapter = async (bookNumber: number): Promise<Hadith[]> => {
+  await loadHadithData();
+  
+  return cachedHadiths.filter(h => h.bookNumber === bookNumber)
+    .sort((a, b) => a.hadithNumber - b.hadithNumber);
 };
 
 // Function to get a specific hadith
