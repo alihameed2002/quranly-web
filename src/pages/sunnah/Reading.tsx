@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, RefreshCw } from "lucide-react";
+import { BookOpen, RefreshCw, AlertTriangle } from "lucide-react";
 import { fetchHadith, getHadithByIndex, getAllHadiths, loadHadithData } from "@/utils/hadithData";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +15,7 @@ const SunnahReading = () => {
   const [currentCollection, setCurrentCollection] = useState("bukhari");
   const [currentBook, setCurrentBook] = useState(1);
   const [currentHadith, setCurrentHadith] = useState(1);
+  const [noData, setNoData] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,15 +27,23 @@ const SunnahReading = () => {
         console.log("Preloading hadiths...");
         setLoading(true);
         await loadHadithData(currentCollection);
-        await getAllHadiths();
+        const allHadiths = await getAllHadiths();
+        
+        if (allHadiths.length === 0) {
+          console.log("No hadiths found, using fallback data");
+          setNoData(true);
+        } else {
+          setNoData(false);
+        }
+        
         console.log("Hadiths preloaded successfully");
       } catch (error) {
         console.error("Failed to preload hadiths:", error);
         setError("Failed to load hadith data. Please try refreshing.");
         toast({
-          title: "Error",
-          description: "Failed to load hadith data",
-          variant: "destructive",
+          title: "Notice",
+          description: "Using sample data as API is currently unavailable",
+          variant: "default",
         });
       } finally {
         setLoading(false);
@@ -105,7 +114,7 @@ const SunnahReading = () => {
         setLoading(false);
       } catch (error) {
         console.error("Error loading hadith data:", error);
-        setError("Failed to load hadith data. Please try refreshing.");
+        setError("Failed to load hadith data. Displaying sample content instead.");
         setLoading(false);
       }
     };
@@ -126,12 +135,12 @@ const SunnahReading = () => {
       });
     } catch (error) {
       console.error("Failed to load hadith data on retry:", error);
-      setError("Failed to load hadith data. Please try again later.");
+      setError("Using sample hadith data as the API is currently unavailable.");
+      setNoData(true);
       setLoading(false);
       toast({
-        title: "Error",
-        description: "Failed to load hadith data",
-        variant: "destructive",
+        title: "Notice",
+        description: "Using sample data as API is currently unavailable",
       });
     }
   };
@@ -147,19 +156,30 @@ const SunnahReading = () => {
     );
   }
   
-  if (error) {
+  if (error && noData) {
     return (
       <div className="min-h-screen bg-app-background flex items-center justify-center">
         <div className="glass-card rounded-lg p-8 flex flex-col items-center justify-center text-center">
-          <div className="mb-4 text-white text-lg">Error</div>
+          <AlertTriangle className="h-12 w-12 text-amber-400 mb-4" />
+          <div className="mb-4 text-white text-lg">API Unavailable</div>
           <p className="text-app-text-secondary mb-4">{error}</p>
-          <Button 
-            onClick={handleRetry}
-            className="bg-app-green hover:bg-app-green-light text-app-background-dark"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" /> 
-            Retry Loading
-          </Button>
+          <div className="flex gap-4">
+            <Button 
+              onClick={handleRetry}
+              className="bg-app-green hover:bg-app-green-light text-app-background-dark"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" /> 
+              Retry Connection
+            </Button>
+            
+            <Button 
+              onClick={() => navigate('/sunnah/reading?collection=bukhari&book=1&hadith=1', { replace: true })}
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/10"
+            >
+              Continue with Sample Data
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -176,7 +196,18 @@ const SunnahReading = () => {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Reading Sunnah</h1>
-            <p className="text-app-text-secondary">Authentic hadith collections</p>
+            <p className="text-app-text-secondary">
+              {noData ? "Sample hadith data (API unavailable)" : "Authentic hadith collections"}
+              {noData && (
+                <Button 
+                  onClick={handleRetry} 
+                  variant="link" 
+                  className="text-app-green p-0 h-auto ml-2"
+                >
+                  Retry
+                </Button>
+              )}
+            </p>
           </div>
         </div>
         

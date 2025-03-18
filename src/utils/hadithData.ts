@@ -66,27 +66,55 @@ export const loadHadithData = async (
 
 // Get all hadiths (with support for pagination in the future)
 export const getAllHadiths = async (): Promise<Hadith[]> => {
-  await loadHadithData();
-  return cachedHadiths;
+  try {
+    await loadHadithData();
+    return cachedHadiths;
+  } catch (error) {
+    console.error("Error in getAllHadiths:", error);
+    // Return empty array instead of throwing to prevent UI crashes
+    return [];
+  }
 };
 
 // Get total number of hadiths
 export const getTotalHadithCount = async (): Promise<number> => {
-  await loadHadithData();
-  return cachedHadiths.length;
+  try {
+    await loadHadithData();
+    return cachedHadiths.length;
+  } catch (error) {
+    console.error("Error in getTotalHadithCount:", error);
+    return 0;
+  }
 };
 
 // Get a specific hadith by index (for pagination)
 export const getHadithByIndex = async (index: number): Promise<Hadith> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) {
-    throw new Error("No hadiths loaded");
+  try {
+    await loadHadithData();
+    
+    if (cachedHadiths.length === 0) {
+      throw new Error("No hadiths loaded");
+    }
+    
+    // Ensure index is within bounds
+    const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
+    return cachedHadiths[safeIndex];
+  } catch (error) {
+    console.error("Error in getHadithByIndex:", error);
+    // Return a placeholder hadith
+    return {
+      id: 0,
+      collection: currentActiveCollection,
+      bookNumber: 1,
+      chapterNumber: 1,
+      hadithNumber: 1,
+      arabic: 'Error loading hadith',
+      english: 'There was an error loading this hadith. Please try again later.',
+      reference: `${currentActiveCollection} 1:1`,
+      grade: '',
+      narrator: ''
+    };
   }
-  
-  // Ensure index is within bounds
-  const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
-  return cachedHadiths[safeIndex];
 };
 
 // Get all hadith chapters/books
@@ -192,7 +220,19 @@ export const fetchHadith = async (
       return cachedHadiths[0];
     }
     
-    throw error;
+    // If everything fails, return a placeholder hadith
+    return {
+      id: 0,
+      collection: collection,
+      bookNumber: bookNumber,
+      chapterNumber: bookNumber,
+      hadithNumber: hadithNumber,
+      arabic: 'لا يوجد حديث',
+      english: 'There was an error loading this hadith. Please try again later.',
+      reference: `${collection} ${bookNumber}:${hadithNumber}`,
+      grade: '',
+      narrator: ''
+    };
   }
 };
 
@@ -202,15 +242,20 @@ export const getHadithIndex = async (
   bookNumber: number, 
   hadithNumber: number
 ): Promise<number> => {
-  await loadHadithData();
-  
-  const index = cachedHadiths.findIndex(h => 
-    h.collection === collection && 
-    h.bookNumber === bookNumber && 
-    h.hadithNumber === hadithNumber
-  );
-  
-  return index >= 0 ? index : 0;
+  try {
+    await loadHadithData();
+    
+    const index = cachedHadiths.findIndex(h => 
+      h.collection === collection && 
+      h.bookNumber === bookNumber && 
+      h.hadithNumber === hadithNumber
+    );
+    
+    return index >= 0 ? index : 0;
+  } catch (error) {
+    console.error("Error in getHadithIndex:", error);
+    return 0;
+  }
 };
 
 // Get the next hadith in sequence
@@ -321,14 +366,31 @@ export const searchHadith = async (query: string): Promise<Hadith[]> => {
 
 // Function to get a random hadith
 export const getRandomHadith = async (): Promise<Hadith> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) {
-    throw new Error("No hadiths loaded");
+  try {
+    await loadHadithData();
+    
+    if (cachedHadiths.length === 0) {
+      throw new Error("No hadiths loaded");
+    }
+    
+    const randomIndex = Math.floor(Math.random() * cachedHadiths.length);
+    return cachedHadiths[randomIndex];
+  } catch (error) {
+    console.error("Error in getRandomHadith:", error);
+    // Return a placeholder hadith
+    return {
+      id: 0,
+      collection: currentActiveCollection,
+      bookNumber: 1,
+      chapterNumber: 1,
+      hadithNumber: 1,
+      arabic: 'عَنْ عُمَرَ بْنِ الْخَطَّابِ رَضِيَ اللَّهُ عَنْهُ قَالَ سَمِعْتُ رَسُولَ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ يَقُولُ إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ',
+      english: 'Actions are judged by intentions.',
+      reference: `${currentActiveCollection} 1:1`,
+      grade: 'Sahih',
+      narrator: 'Umar ibn Al-Khattab'
+    };
   }
-  
-  const randomIndex = Math.floor(Math.random() * cachedHadiths.length);
-  return cachedHadiths[randomIndex];
 };
 
 // Load on module initialization
