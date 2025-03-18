@@ -4,7 +4,7 @@ import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookText } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { fetchHadith, getHadithByIndex, getAllHadiths } from "@/utils/hadithData";
 
 const SunnahReading = () => {
@@ -56,7 +56,7 @@ const SunnahReading = () => {
           }
         }
         
-        // Only allow Sahih Bukhari collection for now
+        // Handle collection parameter - for now we still only support Sahih Bukhari
         if (collectionParam && collectionParam === "Sahih Bukhari") {
           setCurrentCollection(collectionParam);
         } else {
@@ -113,7 +113,7 @@ const SunnahReading = () => {
       <main className="max-w-screen-md mx-auto space-y-8 py-4">
         <div className="px-6 flex items-center space-x-3">
           <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-            <BookText className="h-6 w-6 text-white" />
+            <BookOpen className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Reading Sunnah</h1>

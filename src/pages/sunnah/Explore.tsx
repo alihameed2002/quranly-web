@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookText, Search } from "lucide-react";
+import { BookOpen, Search, Compass, Globe } from "lucide-react";
 import { searchHadith } from "@/utils/hadithData";
 import { Hadith } from "@/utils/hadithTypes";
 import SearchBar from "@/components/search/SearchBar";
@@ -129,7 +129,7 @@ const SunnahExplore = () => {
       <main className="max-w-screen-md mx-auto space-y-6 py-4">
         <div className="px-6 flex items-center space-x-3">
           <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-            <BookText className="h-6 w-6 text-white" />
+            <BookOpen className="h-6 w-6 text-white" />
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Explore Sunnah</h1>
@@ -145,8 +145,12 @@ const SunnahExplore = () => {
                 Search
               </TabsTrigger>
               <TabsTrigger value="browse" className="flex-1">
-                <BookText className="h-4 w-4 mr-2" />
+                <Compass className="h-4 w-4 mr-2" />
                 Browse
+              </TabsTrigger>
+              <TabsTrigger value="collections" className="flex-1">
+                <Globe className="h-4 w-4 mr-2" />
+                Collections
               </TabsTrigger>
             </TabsList>
             
@@ -188,6 +192,41 @@ const SunnahExplore = () => {
             
             <TabsContent value="browse">
               <HadithChapterBrowser />
+            </TabsContent>
+            
+            <TabsContent value="collections">
+              <div className="glass-card rounded-lg p-6">
+                <h2 className="text-lg font-medium text-white mb-4">Hadith Collections</h2>
+                <div className="space-y-3">
+                  {[
+                    { name: "Sahih Bukhari", available: true },
+                    { name: "Sahih Muslim", available: false },
+                    { name: "Sunan Abu Dawood", available: false },
+                    { name: "Jami at-Tirmidhi", available: false },
+                    { name: "Sunan an-Nasa'i", available: false },
+                    { name: "Sunan Ibn Majah", available: false },
+                    { name: "Muwatta Malik", available: false },
+                    { name: "Musnad Ahmad", available: false },
+                    { name: "Sunan al-Darimi", available: false }
+                  ].map((collection, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg flex items-center justify-between ${
+                        collection.available ? 'glass-card hover:bg-white/5 cursor-pointer' : 'bg-white/5 opacity-60'
+                      }`}
+                      onClick={() => collection.available && setActiveTab("browse")}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <BookOpen className="h-5 w-5 text-app-green" />
+                        <span className="text-white">{collection.name}</span>
+                      </div>
+                      {!collection.available && (
+                        <span className="text-app-text-secondary text-xs">Coming soon</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

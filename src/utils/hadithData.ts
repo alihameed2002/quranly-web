@@ -1,123 +1,35 @@
-
 import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
 
 // This will store all loaded hadiths from the API
 let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
-const API_KEY = '$2y$10$NgLZPFmKgeDlaivo0cn9wOJPqw7rfvmgNwiX9CHQXrHv6xjuV9pDa';
-const API_ENDPOINT = 'https://hadithapi.com/api/hadiths/';
 
 // Function to load and process hadith data with pagination
 export const loadHadithData = async (): Promise<void> => {
   if (isDataLoaded && cachedHadiths.length > 0) return;
 
   try {
-    console.log("Starting to load Hadith data from API...");
+    console.log("Starting to load Hadith data from new API source...");
     
-    // For development/testing purposes, use sample data if the API can't be reached
-    const useLocalSample = true; // Set this to false to attempt API calls
+    // For development/testing purposes, use sample data as we transition to the new API
+    const useLocalSample = true; // Set this to false when The9Books API is integrated
 
     if (!useLocalSample) {
-      // Process and deduplicate hadiths
-      const hadiths: Hadith[] = [];
-      const seen = new Set<string>();
+      // Here we would fetch from The9Books API
+      // Implementation will be added when API structure is fully understood
+      console.log("Fetching from The9Books API...");
       
-      // Paginate through the API to get all hadiths
-      let page = 1;
-      let hasMorePages = true;
-      const pageSize = 100; // Number of hadiths per page
-      
-      while (hasMorePages && page <= 10) { // Limit to 10 pages during development (1000 hadiths)
-        try {
-          const apiUrl = `${API_ENDPOINT}?apiKey=${API_KEY}&book=sahih-bukhari&paginate=${pageSize}&page=${page}`;
-          console.log(`Fetching page ${page} of hadiths...`);
-          
-          const apiResponse = await fetch(apiUrl);
-          
-          if (apiResponse.ok) {
-            const apiData = await apiResponse.json();
-            
-            if (apiData.data && Array.isArray(apiData.data)) {
-              console.log(`Retrieved ${apiData.data.length} hadiths from API (page ${page})`);
-              
-              if (apiData.data.length === 0) {
-                hasMorePages = false;
-                break;
-              }
-              
-              apiData.data.forEach((item: any, index: number) => {
-                // Create a key for deduplication based on both book and hadith number
-                const bookNumber = item.bookNumber || item.chapterNumber || 0;
-                const hadithNumber = item.hadithNumber || ((page - 1) * pageSize + index + 1);
-                const key = `${bookNumber}:${hadithNumber}`;
-                
-                if (!seen.has(key) && (item.text || item.englishText) && (item.arabic || item.arabicText)) {
-                  hadiths.push({
-                    id: (page - 1) * pageSize + index + 1,
-                    collection: "Sahih Bukhari",
-                    bookNumber: parseInt(bookNumber) || 0,
-                    chapterNumber: parseInt(bookNumber) || 0,
-                    hadithNumber: parseInt(hadithNumber) || 0,
-                    arabic: item.arabic || item.arabicText || "",
-                    english: item.text || item.englishText || "",
-                    reference: `Sahih Bukhari ${bookNumber || 0}:${hadithNumber || 0}`,
-                    grade: item.grade || "Sahih",
-                    narrator: item.narrator || ""
-                  });
-                  seen.add(key);
-                }
-              });
-              
-              // Check if we should continue paginating
-              if (apiData.meta && apiData.meta.pagination) {
-                const { current_page, last_page } = apiData.meta.pagination;
-                if (current_page >= last_page) {
-                  hasMorePages = false;
-                } else {
-                  page++;
-                }
-              } else {
-                // If pagination info is missing, assume no more pages
-                hasMorePages = false;
-              }
-            } else {
-              hasMorePages = false;
-            }
-          } else {
-            console.warn(`API response was not ok (status: ${apiResponse.status}), halting pagination`);
-            hasMorePages = false;
-          }
-        } catch (pageError) {
-          console.error(`Error fetching page ${page}:`, pageError);
-          hasMorePages = false;
-        }
-      }
-      
-      if (hadiths.length > 0) {
-        console.log(`Successfully loaded ${hadiths.length} hadiths from API`);
-        
-        // Sort hadiths chronologically by book number and hadith number
-        hadiths.sort((a, b) => {
-          // First compare by book number
-          if (a.bookNumber !== b.bookNumber) {
-            return a.bookNumber - b.bookNumber;
-          }
-          // If book numbers are the same, compare by hadith number
-          return a.hadithNumber - b.hadithNumber;
-        });
-        
-        cachedHadiths = hadiths;
-        isDataLoaded = true;
-        return;
-      }
+      // Placeholder for The9Books API integration
+      // const hadiths = await fetchFromThe9BooksAPI();
+      // cachedHadiths = hadiths;
+    } else {
+      // Generate extended sample data for now
+      console.log("Using sample data for Sahih Bukhari hadiths while transitioning to new API");
+      cachedHadiths = generateSampleHadiths(100);
     }
     
-    // Generate extended sample data
-    console.log("Using sample data for Sahih Bukhari hadiths");
-    cachedHadiths = generateSampleHadiths(100);
-    
     isDataLoaded = true;
-    console.log(`Using ${cachedHadiths.length} sample hadiths for demonstration`);
+    console.log(`Using ${cachedHadiths.length} hadiths for display`);
   } catch (error) {
     console.error("Failed to load hadith data:", error);
     // Use sample data as fallback
@@ -154,6 +66,13 @@ const generateSampleHadiths = (count: number): Hadith[] => {
   }
   
   return hadiths;
+};
+
+// Helper function for the future The9Books API integration
+// This is a placeholder and will need to be implemented based on The9Books API structure
+const fetchFromThe9BooksAPI = async (): Promise<Hadith[]> => {
+  // Implementation will be added when API structure is fully understood
+  return [];
 };
 
 // Function to get all hadiths (useful for pagination)
