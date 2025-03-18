@@ -1,165 +1,207 @@
-import { Hadith, sampleHadith, sampleHadiths } from './hadithTypes';
+
+import { Hadith } from './hadithTypes';
+import { 
+  fetchBooks, 
+  fetchHadithsByBook, 
+  fetchHadithByNumber,
+  searchHadithsInThe9Books
+} from './the9BooksApi';
 
 // This will store all loaded hadiths from the API
 let cachedHadiths: Hadith[] = [];
 let isDataLoaded = false;
+let isFetchingInProgress = false;
+let currentActiveCollection = 'bukhari'; // Default to Bukhari
 
-// Function to load and process hadith data with pagination
-export const loadHadithData = async (): Promise<void> => {
-  if (isDataLoaded && cachedHadiths.length > 0) return;
+// Function to load hadith data from The9Books API
+export const loadHadithData = async (
+  collectionId: string = currentActiveCollection,
+  forceRefresh: boolean = false
+): Promise<void> => {
+  if ((isDataLoaded && !forceRefresh) || isFetchingInProgress) return;
 
   try {
-    console.log("Starting to load Hadith data from new API source...");
+    console.log(`Loading Hadith data from The9Books API for collection: ${collectionId}...`);
+    isFetchingInProgress = true;
     
-    // For development/testing purposes, use sample data as we transition to the new API
-    const useLocalSample = true; // Set this to false when The9Books API is integrated
-
-    if (!useLocalSample) {
-      // Here we would fetch from The9Books API
-      // Implementation will be added when API structure is fully understood
-      console.log("Fetching from The9Books API...");
+    // Set active collection
+    currentActiveCollection = collectionId;
+    
+    // Get all books in the collection
+    const books = await fetchBooks(collectionId);
+    console.log(`Loaded ${books.length} books from collection ${collectionId}`);
+    
+    // For initial load, we'll fetch hadiths from first few books to display something quickly
+    // Later we can implement lazy loading for the rest
+    const initialBooksToLoad = Math.min(5, books.length);
+    const loadedHadiths: Hadith[] = [];
+    
+    for (let i = 0; i < initialBooksToLoad; i++) {
+      const book = books[i];
+      console.log(`Fetching hadiths from book ${book.id}: ${book.name}`);
       
-      // Placeholder for The9Books API integration
-      // const hadiths = await fetchFromThe9BooksAPI();
-      // cachedHadiths = hadiths;
-    } else {
-      // Generate extended sample data for now
-      console.log("Using sample data for Sahih Bukhari hadiths while transitioning to new API");
-      cachedHadiths = generateSampleHadiths(100);
+      try {
+        const hadiths = await fetchHadithsByBook(collectionId, book.id);
+        loadedHadiths.push(...hadiths);
+        console.log(`Loaded ${hadiths.length} hadiths from book ${book.id}`);
+      } catch (error) {
+        console.error(`Failed to load hadiths from book ${book.id}:`, error);
+      }
+    }
+    
+    // Replace cached hadiths if we got new data
+    if (loadedHadiths.length > 0) {
+      cachedHadiths = loadedHadiths;
     }
     
     isDataLoaded = true;
-    console.log(`Using ${cachedHadiths.length} hadiths for display`);
+    console.log(`Loaded ${cachedHadiths.length} hadiths in total for collection ${collectionId}`);
   } catch (error) {
     console.error("Failed to load hadith data:", error);
-    // Use sample data as fallback
-    cachedHadiths = generateSampleHadiths(50);
-    isDataLoaded = true;
+    throw error;
+  } finally {
+    isFetchingInProgress = false;
   }
 };
 
-// Function to generate a larger set of sample hadiths for testing
-const generateSampleHadiths = (count: number): Hadith[] => {
-  const hadiths: Hadith[] = [...sampleHadiths];
-  
-  // Add more sample hadiths to make navigation meaningful
-  for (let book = 1; book <= 10; book++) {
-    for (let i = 1; i <= 10; i++) {
-      const hadithNum = (book - 1) * 10 + i;
-      if (hadiths.length >= count) break;
-      
-      const newHadith = {
-        id: hadiths.length + 1,
-        collection: "Sahih Bukhari",
-        bookNumber: book,
-        chapterNumber: book,
-        hadithNumber: hadithNum,
-        arabic: sampleHadith.arabic,
-        english: `This is sample hadith #${hadithNum} from Book ${book}. ${sampleHadith.english.substring(0, 100)}...`,
-        reference: `Sahih Bukhari ${book}:${hadithNum}`,
-        grade: "Sahih",
-        narrator: sampleHadith.narrator || "Abu Hurairah"
-      };
-      hadiths.push(newHadith);
-    }
-    if (hadiths.length >= count) break;
-  }
-  
-  return hadiths;
-};
-
-// Helper function for the future The9Books API integration
-// This is a placeholder and will need to be implemented based on The9Books API structure
-const fetchFromThe9BooksAPI = async (): Promise<Hadith[]> => {
-  // Implementation will be added when API structure is fully understood
-  return [];
-};
-
-// Function to get all hadiths (useful for pagination)
+// Get all hadiths (with support for pagination in the future)
 export const getAllHadiths = async (): Promise<Hadith[]> => {
   await loadHadithData();
   return cachedHadiths;
 };
 
-// Function to get total number of hadiths
+// Get total number of hadiths
 export const getTotalHadithCount = async (): Promise<number> => {
   await loadHadithData();
   return cachedHadiths.length;
 };
 
-// Function to get a specific hadith by index (for pagination)
+// Get a specific hadith by index (for pagination)
 export const getHadithByIndex = async (index: number): Promise<Hadith> => {
   await loadHadithData();
   
-  if (cachedHadiths.length === 0) return sampleHadith;
+  if (cachedHadiths.length === 0) {
+    throw new Error("No hadiths loaded");
+  }
   
   // Ensure index is within bounds
   const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
   return cachedHadiths[safeIndex];
 };
 
-// Function to get all hadith chapters/books
-export const getHadithChapters = async (): Promise<{id: number, name: string, hadithCount: number}[]> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) return [];
-  
-  // Group hadiths by book number
-  const bookMap = new Map<number, number>();
-  
-  cachedHadiths.forEach(hadith => {
-    if (!bookMap.has(hadith.bookNumber)) {
-      bookMap.set(hadith.bookNumber, 1);
-    } else {
-      bookMap.set(hadith.bookNumber, (bookMap.get(hadith.bookNumber) || 0) + 1);
+// Get all hadith chapters/books
+export const getHadithChapters = async (collectionId: string = currentActiveCollection): Promise<{id: number, name: string, hadithCount: number}[]> => {
+  try {
+    // Always fetch fresh book data from API
+    const books = await fetchBooks(collectionId);
+    return books;
+  } catch (error) {
+    console.error("Failed to load hadith chapters:", error);
+    
+    // If we have cached hadiths, we can try to extract books from there
+    if (cachedHadiths.length > 0) {
+      const bookMap = new Map<number, number>();
+      
+      cachedHadiths.forEach(hadith => {
+        if (!bookMap.has(hadith.bookNumber)) {
+          bookMap.set(hadith.bookNumber, 1);
+        } else {
+          bookMap.set(hadith.bookNumber, (bookMap.get(hadith.bookNumber) || 0) + 1);
+        }
+      });
+      
+      return Array.from(bookMap.entries()).map(([bookNumber, count]) => ({
+        id: bookNumber,
+        name: `Book ${bookNumber}`,
+        hadithCount: count
+      })).sort((a, b) => a.id - b.id);
     }
-  });
-  
-  // Convert to array of chapter objects
-  return Array.from(bookMap.entries()).map(([bookNumber, count]) => ({
-    id: bookNumber,
-    name: `Book ${bookNumber}`,
-    hadithCount: count
-  })).sort((a, b) => a.id - b.id);
-};
-
-// Function to get hadiths for a specific chapter/book
-export const getHadithsByChapter = async (bookNumber: number): Promise<Hadith[]> => {
-  await loadHadithData();
-  
-  return cachedHadiths.filter(h => h.bookNumber === bookNumber)
-    .sort((a, b) => a.hadithNumber - b.hadithNumber);
-};
-
-// Function to get a specific hadith
-export const fetchHadith = async (collection: string, bookNumber: number, hadithNumber: number): Promise<Hadith> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) {
-    console.warn("No hadiths loaded, returning sample hadith");
-    return sampleHadith;
+    
+    return [];
   }
-  
-  const hadith = cachedHadiths.find(h => 
-    h.collection === collection && 
-    h.bookNumber === bookNumber && 
-    h.hadithNumber === hadithNumber
-  );
-  
-  if (!hadith) {
-    console.warn(`Hadith not found: ${collection} ${bookNumber}:${hadithNumber}, using first hadith of the book`);
-    // Try to find any hadith from the same book
+};
+
+// Get hadiths for a specific chapter/book
+export const getHadithsByChapter = async (
+  bookNumber: number, 
+  collectionId: string = currentActiveCollection
+): Promise<Hadith[]> => {
+  try {
+    // Always fetch fresh data for specific book
+    const hadiths = await fetchHadithsByBook(collectionId, bookNumber);
+    
+    // Add to cache if not already there
+    if (hadiths.length > 0) {
+      // Add only unique hadiths to cache
+      hadiths.forEach(hadith => {
+        if (!cachedHadiths.some(h => 
+          h.collection === hadith.collection && 
+          h.bookNumber === hadith.bookNumber && 
+          h.hadithNumber === hadith.hadithNumber
+        )) {
+          cachedHadiths.push(hadith);
+        }
+      });
+    }
+    
+    return hadiths.sort((a, b) => a.hadithNumber - b.hadithNumber);
+  } catch (error) {
+    console.error(`Failed to get hadiths for book ${bookNumber}:`, error);
+    
+    // Fallback to cached hadiths if available
+    return cachedHadiths
+      .filter(h => h.bookNumber === bookNumber)
+      .sort((a, b) => a.hadithNumber - b.hadithNumber);
+  }
+};
+
+// Get a specific hadith
+export const fetchHadith = async (
+  collection: string = currentActiveCollection, 
+  bookNumber: number, 
+  hadithNumber: number
+): Promise<Hadith> => {
+  try {
+    // First check if it's in the cache
+    const cachedHadith = cachedHadiths.find(h => 
+      h.collection === collection && 
+      h.bookNumber === bookNumber && 
+      h.hadithNumber === hadithNumber
+    );
+    
+    if (cachedHadith) {
+      return cachedHadith;
+    }
+    
+    // If not in cache, fetch from API
+    const hadith = await fetchHadithByNumber(collection, bookNumber, hadithNumber);
+    
+    // Add to cache
+    cachedHadiths.push(hadith);
+    
+    return hadith;
+  } catch (error) {
+    console.error(`Failed to fetch hadith ${collection} ${bookNumber}:${hadithNumber}:`, error);
+    
+    // Try to find any hadith from the same book in cache
     const bookHadith = cachedHadiths.find(h => h.bookNumber === bookNumber);
     if (bookHadith) return bookHadith;
     
-    return cachedHadiths[0] || sampleHadith;
+    // Last resort: return first cached hadith or throw error
+    if (cachedHadiths.length > 0) {
+      return cachedHadiths[0];
+    }
+    
+    throw error;
   }
-  
-  return hadith;
 };
 
-// Function to get hadith index from collection, book, and hadith number
-export const getHadithIndex = async (collection: string, bookNumber: number, hadithNumber: number): Promise<number> => {
+// Get hadith index from collection, book, and hadith number
+export const getHadithIndex = async (
+  collection: string = currentActiveCollection, 
+  bookNumber: number, 
+  hadithNumber: number
+): Promise<number> => {
   await loadHadithData();
   
   const index = cachedHadiths.findIndex(h => 
@@ -171,79 +213,119 @@ export const getHadithIndex = async (collection: string, bookNumber: number, had
   return index >= 0 ? index : 0;
 };
 
-// Function to get the next hadith in sequence
+// Get the next hadith in sequence
 export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) {
-    console.warn("No hadiths loaded, returning sample hadith");
-    return current; // Return current hadith instead of sample to avoid navigation issues
+  // First try to get the next hadith by querying the API for the next hadith number in the same book
+  try {
+    const nextHadithNumber = current.hadithNumber + 1;
+    return await fetchHadith(current.collection, current.bookNumber, nextHadithNumber);
+  } catch (error) {
+    console.log("Could not get next hadith directly, trying next book...");
+    
+    // If that fails, try to get the first hadith of the next book
+    try {
+      const books = await getHadithChapters(current.collection);
+      const currentBookIndex = books.findIndex(b => b.id === current.bookNumber);
+      
+      if (currentBookIndex >= 0 && currentBookIndex < books.length - 1) {
+        const nextBook = books[currentBookIndex + 1];
+        return await fetchHadith(current.collection, nextBook.id, 1);
+      }
+    } catch (innerError) {
+      console.error("Failed to get next book hadith:", innerError);
+    }
+    
+    // If all attempts fail, resort to index-based navigation with cached hadiths
+    const currentIndex = cachedHadiths.findIndex(h => 
+      h.collection === current.collection && 
+      h.bookNumber === current.bookNumber && 
+      h.hadithNumber === current.hadithNumber
+    );
+    
+    if (currentIndex === -1 || currentIndex === cachedHadiths.length - 1) {
+      return current;
+    }
+    
+    return cachedHadiths[currentIndex + 1];
   }
-  
-  const currentIndex = cachedHadiths.findIndex(h => 
-    h.collection === current.collection && 
-    h.bookNumber === current.bookNumber && 
-    h.hadithNumber === current.hadithNumber
-  );
-  
-  console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
-  
-  // If current hadith not found or is the last one, return the same hadith
-  if (currentIndex === -1 || currentIndex === cachedHadiths.length - 1) {
-    console.log("User is at the last hadith or hadith not found, staying on current");
-    return current;
-  }
-  
-  console.log(`Moving from hadith at index ${currentIndex} to ${currentIndex + 1}`);
-  return cachedHadiths[currentIndex + 1];
 };
 
-// Function to get the previous hadith in sequence
+// Get the previous hadith in sequence
 export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
-  await loadHadithData();
-  
-  if (cachedHadiths.length === 0) {
-    console.warn("No hadiths loaded, returning sample hadith");
-    return current; // Return current hadith instead of sample to avoid navigation issues
+  // First try to get the previous hadith by querying the API for the previous hadith number in the same book
+  try {
+    if (current.hadithNumber > 1) {
+      const prevHadithNumber = current.hadithNumber - 1;
+      return await fetchHadith(current.collection, current.bookNumber, prevHadithNumber);
+    } else {
+      throw new Error("At first hadith in book");
+    }
+  } catch (error) {
+    console.log("Could not get previous hadith directly, trying previous book...");
+    
+    // If that fails, try to get the last hadith of the previous book
+    try {
+      const books = await getHadithChapters(current.collection);
+      const currentBookIndex = books.findIndex(b => b.id === current.bookNumber);
+      
+      if (currentBookIndex > 0) {
+        const prevBook = books[currentBookIndex - 1];
+        // Ideally we'd get the last hadith of the previous book, but we'd need to know its count
+        // For now, let's try a high number and let the API handle it
+        const prevBookHadiths = await getHadithsByChapter(prevBook.id, current.collection);
+        if (prevBookHadiths.length > 0) {
+          return prevBookHadiths[prevBookHadiths.length - 1];
+        }
+      }
+    } catch (innerError) {
+      console.error("Failed to get previous book hadith:", innerError);
+    }
+    
+    // If all attempts fail, resort to index-based navigation with cached hadiths
+    const currentIndex = cachedHadiths.findIndex(h => 
+      h.collection === current.collection && 
+      h.bookNumber === current.bookNumber && 
+      h.hadithNumber === current.hadithNumber
+    );
+    
+    if (currentIndex <= 0) {
+      return current;
+    }
+    
+    return cachedHadiths[currentIndex - 1];
   }
-  
-  const currentIndex = cachedHadiths.findIndex(h => 
-    h.collection === current.collection && 
-    h.bookNumber === current.bookNumber && 
-    h.hadithNumber === current.hadithNumber
-  );
-  
-  console.log(`Current hadith index: ${currentIndex}, total hadiths: ${cachedHadiths.length}`);
-  
-  // If current hadith not found or is the first one, return the same hadith
-  if (currentIndex <= 0) {
-    console.log("User is at the first hadith or hadith not found, staying on current");
-    return current;
-  }
-  
-  console.log(`Moving from hadith at index ${currentIndex} to ${currentIndex - 1}`);
-  return cachedHadiths[currentIndex - 1];
 };
 
 // Function to search hadiths
 export const searchHadith = async (query: string): Promise<Hadith[]> => {
-  await loadHadithData();
+  if (!query.trim()) return [];
   
-  if (!query) return [];
-  
-  const searchTerms = query.toLowerCase().split(' ');
-  
-  return cachedHadiths.filter(hadith => {
-    const englishText = hadith.english.toLowerCase();
-    return searchTerms.every(term => englishText.includes(term));
-  });
+  try {
+    return await searchHadithsInThe9Books(query);
+  } catch (error) {
+    console.error("Search error:", error);
+    
+    // Fallback to local search if API fails
+    if (cachedHadiths.length > 0) {
+      const searchTerms = query.toLowerCase().split(' ');
+      
+      return cachedHadiths.filter(hadith => {
+        const englishText = hadith.english.toLowerCase();
+        return searchTerms.every(term => englishText.includes(term));
+      });
+    }
+    
+    return [];
+  }
 };
 
 // Function to get a random hadith
 export const getRandomHadith = async (): Promise<Hadith> => {
   await loadHadithData();
   
-  if (cachedHadiths.length === 0) return sampleHadith;
+  if (cachedHadiths.length === 0) {
+    throw new Error("No hadiths loaded");
+  }
   
   const randomIndex = Math.floor(Math.random() * cachedHadiths.length);
   return cachedHadiths[randomIndex];

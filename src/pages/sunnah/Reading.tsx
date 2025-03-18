@@ -4,31 +4,45 @@ import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen } from "lucide-react";
-import { fetchHadith, getHadithByIndex, getAllHadiths } from "@/utils/hadithData";
+import { BookOpen, RefreshCw } from "lucide-react";
+import { fetchHadith, getHadithByIndex, getAllHadiths, loadHadithData } from "@/utils/hadithData";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const SunnahReading = () => {
   const [loading, setLoading] = useState(true);
-  const [currentCollection, setCurrentCollection] = useState("Sahih Bukhari");
+  const [error, setError] = useState<string | null>(null);
+  const [currentCollection, setCurrentCollection] = useState("bukhari");
   const [currentBook, setCurrentBook] = useState(1);
   const [currentHadith, setCurrentHadith] = useState(1);
   const location = useLocation();
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   // Preload hadiths to ensure navigation works
   useEffect(() => {
     const preloadHadiths = async () => {
       try {
         console.log("Preloading hadiths...");
+        setLoading(true);
+        await loadHadithData(currentCollection);
         await getAllHadiths();
         console.log("Hadiths preloaded successfully");
       } catch (error) {
         console.error("Failed to preload hadiths:", error);
+        setError("Failed to load hadith data. Please try refreshing.");
+        toast({
+          title: "Error",
+          description: "Failed to load hadith data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
     };
     
     preloadHadiths();
-  }, []);
+  }, [currentCollection, toast]);
   
   useEffect(() => {
     // Parse collection, book and hadith from URL query parameters
@@ -56,11 +70,11 @@ const SunnahReading = () => {
           }
         }
         
-        // Handle collection parameter - for now we still only support Sahih Bukhari
-        if (collectionParam && collectionParam === "Sahih Bukhari") {
+        // Handle collection parameter
+        if (collectionParam) {
           setCurrentCollection(collectionParam);
         } else {
-          setCurrentCollection("Sahih Bukhari");
+          setCurrentCollection("bukhari"); // Default to Bukhari
         }
         
         if (bookParam) {
@@ -82,12 +96,16 @@ const SunnahReading = () => {
         
         // If we have no parameters at all, update the URL with the defaults
         if (!collectionParam && !bookParam && !hadithParam && !indexParam) {
-          navigate(`/sunnah/reading?collection=Sahih%20Bukhari&book=1&hadith=1`, { replace: true });
+          navigate(`/sunnah/reading?collection=bukhari&book=1&hadith=1`, { replace: true });
         }
+        
+        // Ensure data is loaded for the selected collection
+        await loadHadithData(collectionParam || "bukhari");
         
         setLoading(false);
       } catch (error) {
         console.error("Error loading hadith data:", error);
+        setError("Failed to load hadith data. Please try refreshing.");
         setLoading(false);
       }
     };
@@ -95,12 +113,53 @@ const SunnahReading = () => {
     loadData();
   }, [location.search, navigate]);
   
+  const handleRetry = async () => {
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await loadHadithData(currentCollection, true); // Force refresh
+      setLoading(false);
+      toast({
+        title: "Success",
+        description: "Hadith data loaded successfully",
+      });
+    } catch (error) {
+      console.error("Failed to load hadith data on retry:", error);
+      setError("Failed to load hadith data. Please try again later.");
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: "Failed to load hadith data",
+        variant: "destructive",
+      });
+    }
+  };
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-app-background flex items-center justify-center">
         <div className="glass-card rounded-lg p-8 flex flex-col items-center justify-center animate-pulse-gentle">
           <div className="h-10 w-10 border-4 border-app-green border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-app-text-secondary">Loading hadith...</p>
+          <p className="text-app-text-secondary">Loading hadith collection...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-app-background flex items-center justify-center">
+        <div className="glass-card rounded-lg p-8 flex flex-col items-center justify-center text-center">
+          <div className="mb-4 text-white text-lg">Error</div>
+          <p className="text-app-text-secondary mb-4">{error}</p>
+          <Button 
+            onClick={handleRetry}
+            className="bg-app-green hover:bg-app-green-light text-app-background-dark"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" /> 
+            Retry Loading
+          </Button>
         </div>
       </div>
     );

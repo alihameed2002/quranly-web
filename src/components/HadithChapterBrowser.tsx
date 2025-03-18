@@ -7,12 +7,17 @@ import { cn } from "@/lib/utils";
 import { Hadith } from "@/utils/hadithTypes";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 interface HadithChapterBrowserProps {
   className?: string;
+  collectionId?: string;
 }
 
-export default function HadithChapterBrowser({ className }: HadithChapterBrowserProps) {
+export default function HadithChapterBrowser({ 
+  className,
+  collectionId = "bukhari"
+}: HadithChapterBrowserProps) {
   const [chapters, setChapters] = useState<{id: number, name: string, hadithCount: number}[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
@@ -20,22 +25,28 @@ export default function HadithChapterBrowser({ className }: HadithChapterBrowser
   const [loadingChapter, setLoadingChapter] = useState<number | null>(null);
   
   const navigate = useNavigate();
+  const { toast } = useToast();
   
   useEffect(() => {
     const loadChapters = async () => {
       try {
         setLoading(true);
-        const hadithChapters = await getHadithChapters();
+        const hadithChapters = await getHadithChapters(collectionId);
         setChapters(hadithChapters);
       } catch (error) {
         console.error("Failed to load hadith chapters:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load hadith chapters",
+          variant: "destructive",
+        });
       } finally {
         setLoading(false);
       }
     };
     
     loadChapters();
-  }, []);
+  }, [collectionId, toast]);
   
   const handleExpandChapter = async (chapterId: number) => {
     // Toggle expansion
@@ -50,13 +61,18 @@ export default function HadithChapterBrowser({ className }: HadithChapterBrowser
     if (!chapterHadiths[chapterId]) {
       setLoadingChapter(chapterId);
       try {
-        const hadiths = await getHadithsByChapter(chapterId);
+        const hadiths = await getHadithsByChapter(chapterId, collectionId);
         setChapterHadiths(prev => ({
           ...prev,
           [chapterId]: hadiths
         }));
       } catch (error) {
         console.error(`Failed to load hadiths for chapter ${chapterId}:`, error);
+        toast({
+          title: "Error",
+          description: `Failed to load hadiths for chapter ${chapterId}`,
+          variant: "destructive",
+        });
       } finally {
         setLoadingChapter(null);
       }
@@ -88,16 +104,16 @@ export default function HadithChapterBrowser({ className }: HadithChapterBrowser
   return (
     <div className={cn("space-y-4", className)}>
       <h2 className="text-lg font-medium text-white mb-4">
-        Browse Sahih Bukhari by Book
+        Browse {chapters.length > 0 && chapters[0]?.name.split(' ')[0]} by Book
       </h2>
       
       {chapters.length === 0 && !loading ? (
         <div className="glass-card rounded-lg p-8 text-center">
-          <p className="text-app-text-secondary mb-4">
-            We're currently transitioning to a new API source (The9Books).
-          </p>
           <p className="text-app-text-secondary">
-            Full book listings will be available soon.
+            No books available for this collection.
+          </p>
+          <p className="text-app-text-secondary mt-2">
+            Please try another collection.
           </p>
         </div>
       ) : (
@@ -133,21 +149,27 @@ export default function HadithChapterBrowser({ className }: HadithChapterBrowser
                   </div>
                 ) : (
                   <div className="space-y-2 mt-2">
-                    {chapterHadiths[chapter.id]?.map((hadith, index) => (
-                      <div 
-                        key={`${hadith.collection}-${hadith.bookNumber}-${hadith.hadithNumber}`}
-                        className="p-3 rounded-md hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-between"
-                        onClick={() => navigateToHadith(hadith)}
-                      >
-                        <div>
-                          <div className="text-sm text-white">Hadith #{hadith.hadithNumber}</div>
-                          <div className="text-xs text-app-text-secondary truncate max-w-[250px]">
-                            {hadith.english.substring(0, 60)}...
+                    {chapterHadiths[chapter.id]?.length > 0 ? (
+                      chapterHadiths[chapter.id].map((hadith, index) => (
+                        <div 
+                          key={`${hadith.collection}-${hadith.bookNumber}-${hadith.hadithNumber}`}
+                          className="p-3 rounded-md hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-between"
+                          onClick={() => navigateToHadith(hadith)}
+                        >
+                          <div>
+                            <div className="text-sm text-white">Hadith #{hadith.hadithNumber}</div>
+                            <div className="text-xs text-app-text-secondary truncate max-w-[250px]">
+                              {hadith.english.substring(0, 60)}...
+                            </div>
                           </div>
+                          <ChevronRight className="h-4 w-4 text-app-text-secondary" />
                         </div>
-                        <ChevronRight className="h-4 w-4 text-app-text-secondary" />
+                      ))
+                    ) : (
+                      <div className="text-center text-app-text-secondary py-4">
+                        No hadiths available for this book
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
               </AccordionContent>

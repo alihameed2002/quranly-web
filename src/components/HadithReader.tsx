@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
-import { Hadith, sampleHadith } from "@/utils/hadithTypes";
+import { Hadith } from "@/utils/hadithTypes";
 import { 
   fetchHadith, 
   getNextHadith, 
@@ -34,7 +34,7 @@ interface HadithReaderProps {
 
 export default function HadithReader({
   className,
-  initialCollection = "Sahih Bukhari",
+  initialCollection = "bukhari",
   initialBook = 1,
   initialHadith = 1
 }: HadithReaderProps) {
@@ -76,17 +76,21 @@ export default function HadithReader({
   useEffect(() => {
     const updateCurrentIndex = async () => {
       if (hadithData) {
-        const index = await getHadithIndex(
-          hadithData.collection,
-          hadithData.bookNumber,
-          hadithData.hadithNumber
-        );
-        setCurrentIndex(index);
-        
-        setIsFirstHadith(index === 0);
-        setIsLastHadith(index === totalHadiths - 1);
-        
-        console.log(`Current index: ${index}, isFirst: ${index === 0}, isLast: ${index === totalHadiths - 1}`);
+        try {
+          const index = await getHadithIndex(
+            hadithData.collection,
+            hadithData.bookNumber,
+            hadithData.hadithNumber
+          );
+          setCurrentIndex(index);
+          
+          setIsFirstHadith(index === 0);
+          setIsLastHadith(index === totalHadiths - 1);
+          
+          console.log(`Current index: ${index}, isFirst: ${index === 0}, isLast: ${index === totalHadiths - 1}`);
+        } catch (error) {
+          console.error("Error updating current index:", error);
+        }
       }
     };
     
@@ -195,6 +199,11 @@ export default function HadithReader({
     try {
       setIsLoading(true);
       const hadith = await getHadithByIndex(index);
+      
+      if (!hadith) {
+        throw new Error("Hadith not found");
+      }
+      
       setCurrentCollection(hadith.collection);
       setCurrentBook(hadith.bookNumber);
       setCurrentHadith(hadith.hadithNumber);

@@ -4,7 +4,8 @@ import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Search, Compass, Globe } from "lucide-react";
-import { searchHadith } from "@/utils/hadithData";
+import { searchHadith, loadHadithData } from "@/utils/hadithData";
+import { fetchCollections } from "@/utils/the9BooksApi";
 import { Hadith } from "@/utils/hadithTypes";
 import SearchBar from "@/components/search/SearchBar";
 import SearchFilters from "@/components/search/SearchFilters";
@@ -12,6 +13,8 @@ import SearchLoadingIndicator from "@/components/search/SearchLoadingIndicator";
 import SunnahSearchResults from "@/components/search/SunnahSearchResults";
 import HadithChapterBrowser from "@/components/HadithChapterBrowser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 const SunnahExplore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,10 +24,34 @@ const SunnahExplore = () => {
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse"); // Default to browse tab
+  const [collections, setCollections] = useState<{id: string, name: string}[]>([]);
+  const [activeCollection, setActiveCollection] = useState("bukhari");
+  const [isLoadingCollection, setIsLoadingCollection] = useState(false);
+  
   const resultsContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // Load collections on initial render
+  useEffect(() => {
+    const loadAvailableCollections = async () => {
+      try {
+        const fetchedCollections = await fetchCollections();
+        setCollections(fetchedCollections);
+      } catch (error) {
+        console.error("Error loading collections:", error);
+        toast({
+          title: "Failed to load collections",
+          description: "Using default Bukhari collection",
+          variant: "destructive",
+        });
+      }
+    };
+    
+    loadAvailableCollections();
+  }, [toast]);
   
   // Check if there's state from navigation
   useEffect(() => {
@@ -58,6 +85,30 @@ const SunnahExplore = () => {
     
     setIsInitializing(false);
   }, [location.state]);
+  
+  const handleCollectionChange = async (collectionId: string) => {
+    if (collectionId === activeCollection) return;
+    
+    setIsLoadingCollection(true);
+    setActiveCollection(collectionId);
+    
+    try {
+      await loadHadithData(collectionId, true);
+      toast({
+        title: "Collection Changed",
+        description: `Now browsing ${collections.find(c => c.id === collectionId)?.name || collectionId}`,
+      });
+    } catch (error) {
+      console.error(`Error loading collection ${collectionId}:`, error);
+      toast({
+        title: "Error Loading Collection",
+        description: "Failed to load selected collection",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingCollection(false);
+    }
+  };
   
   const addToRecentSearches = (query: string) => {
     if (!query.trim()) return;
@@ -103,6 +154,11 @@ const SunnahExplore = () => {
     } catch (error) {
       console.error("Search error:", error);
       setSearchResults([]);
+      toast({
+        title: "Search Error",
+        description: "Failed to search hadith collection",
+        variant: "destructive",
+      });
     } finally {
       setIsSearching(false);
     }
@@ -133,7 +189,7 @@ const SunnahExplore = () => {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Explore Sunnah</h1>
-            <p className="text-app-text-secondary">Browse and search Sahih Bukhari</p>
+            <p className="text-app-text-secondary">Browse and search authentic hadith collections</p>
           </div>
         </div>
         
@@ -153,6 +209,31 @@ const SunnahExplore = () => {
                 Collections
               </TabsTrigger>
             </TabsList>
+            
+            {/* Collection selector - visible in both browse and search tabs */}
+            {(activeTab === "browse" || activeTab === "search") && (
+              <div className="mb-4">
+                <Select value={activeCollection} onValueChange={handleCollectionChange} disabled={isLoadingCollection}>
+                  <SelectTrigger className="glass-card border-white/20 text-white">
+                    <SelectValue placeholder="Select Collection" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-app-background-dark border-white/20">
+                    {collections.map(collection => (
+                      <SelectItem 
+                        key={collection.id} 
+                        value={collection.id}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {collection.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isLoadingCollection && (
+                  <p className="text-app-text-secondary text-sm mt-1 animate-pulse">Loading collection data...</p>
+                )}
+              </div>
+            )}
             
             <TabsContent value="search" className="space-y-4">
               <SearchBar 
@@ -191,40 +272,41 @@ const SunnahExplore = () => {
             </TabsContent>
             
             <TabsContent value="browse">
-              <HadithChapterBrowser />
+              <HadithChapterBrowser collectionId={activeCollection} />
             </TabsContent>
             
             <TabsContent value="collections">
               <div className="glass-card rounded-lg p-6">
                 <h2 className="text-lg font-medium text-white mb-4">Hadith Collections</h2>
                 <div className="space-y-3">
-                  {[
-                    { name: "Sahih Bukhari", available: true },
-                    { name: "Sahih Muslim", available: false },
-                    { name: "Sunan Abu Dawood", available: false },
-                    { name: "Jami at-Tirmidhi", available: false },
-                    { name: "Sunan an-Nasa'i", available: false },
-                    { name: "Sunan Ibn Majah", available: false },
-                    { name: "Muwatta Malik", available: false },
-                    { name: "Musnad Ahmad", available: false },
-                    { name: "Sunan al-Darimi", available: false }
-                  ].map((collection, index) => (
-                    <div 
-                      key={index}
-                      className={`p-4 rounded-lg flex items-center justify-between ${
-                        collection.available ? 'glass-card hover:bg-white/5 cursor-pointer' : 'bg-white/5 opacity-60'
-                      }`}
-                      onClick={() => collection.available && setActiveTab("browse")}
-                    >
-                      <div className="flex items-center space-x-3">
-                        <BookOpen className="h-5 w-5 text-app-green" />
-                        <span className="text-white">{collection.name}</span>
+                  {collections.length > 0 ? (
+                    collections.map((collection, index) => (
+                      <div 
+                        key={collection.id}
+                        className="p-4 rounded-lg flex items-center justify-between glass-card hover:bg-white/5 cursor-pointer"
+                        onClick={() => {
+                          handleCollectionChange(collection.id);
+                          setActiveTab("browse");
+                        }}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <BookOpen className="h-5 w-5 text-app-green" />
+                          <span className="text-white">{collection.name}</span>
+                        </div>
                       </div>
-                      {!collection.available && (
-                        <span className="text-app-text-secondary text-xs">Coming soon</span>
+                    ))
+                  ) : (
+                    <div className="text-center text-app-text-secondary py-6">
+                      {isLoadingCollection ? (
+                        <div className="flex flex-col items-center">
+                          <div className="h-8 w-8 border-4 border-app-green border-t-transparent rounded-full animate-spin mb-2"></div>
+                          <p>Loading collections...</p>
+                        </div>
+                      ) : (
+                        <p>No collections available</p>
                       )}
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </TabsContent>
