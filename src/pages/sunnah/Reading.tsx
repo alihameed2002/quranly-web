@@ -15,11 +15,13 @@ const SunnahReading = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Preload hadiths to ensure navigation works
   useEffect(() => {
-    // Preload hadiths to ensure navigation works
     const preloadHadiths = async () => {
       try {
+        console.log("Preloading hadiths...");
         await getAllHadiths();
+        console.log("Hadiths preloaded successfully");
       } catch (error) {
         console.error("Failed to preload hadiths:", error);
       }

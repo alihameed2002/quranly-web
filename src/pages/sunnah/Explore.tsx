@@ -20,7 +20,7 @@ const SunnahExplore = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState("search");
+  const [activeTab, setActiveTab] = useState("browse"); // Default to browse tab
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   
   const location = useLocation();
@@ -95,6 +95,9 @@ const SunnahExplore = () => {
       import('@/utils/searchUtils').then(({ expandSearchTerms }) => {
         const terms = expandSearchTerms(queryToUse);
         setExpandedTerms(terms);
+      }).catch(err => {
+        console.error("Error importing searchUtils:", err);
+        setExpandedTerms(queryToUse.split(' '));
       });
       
     } catch (error) {
@@ -130,12 +133,12 @@ const SunnahExplore = () => {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Explore Sunnah</h1>
-            <p className="text-app-text-secondary">Search hadith collections</p>
+            <p className="text-app-text-secondary">Browse and search Sahih Bukhari</p>
           </div>
         </div>
         
         <div className="px-6">
-          <Tabs defaultValue="search" value={activeTab} onValueChange={setActiveTab}>
+          <Tabs defaultValue="browse" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="glass-card w-full mb-4 bg-white/5">
               <TabsTrigger value="search" className="flex-1">
                 <Search className="h-4 w-4 mr-2" />

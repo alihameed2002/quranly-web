@@ -32,10 +32,34 @@ export default function HadithCard({
 
   const handleShare = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toast({
-      title: "Sharing hadith",
-      description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
-    });
+    
+    // Create share URL
+    const shareUrl = `/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`;
+    
+    // Try to use the Web Share API if available
+    if (navigator.share) {
+      navigator.share({
+        title: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
+        text: hadith.english.substring(0, 100) + '...',
+        url: window.location.origin + shareUrl,
+      }).catch((error) => console.log('Error sharing', error));
+    } else {
+      // Fallback to copying to clipboard
+      navigator.clipboard.writeText(window.location.origin + shareUrl)
+        .then(() => {
+          toast({
+            title: "Link copied to clipboard",
+            description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
+          });
+        })
+        .catch((error) => {
+          console.error('Could not copy link: ', error);
+          toast({
+            title: "Sharing hadith",
+            description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
+          });
+        });
+    }
   };
 
   // Format the book name for display
