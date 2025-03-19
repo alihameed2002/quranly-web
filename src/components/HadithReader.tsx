@@ -7,6 +7,7 @@ import { Hadith } from "@/utils/hadithTypes";
 import { useToast } from "@/hooks/use-toast";
 import { useProgress } from "@/hooks/useProgress";
 import BukhariBookSelector from "./BukhariBookSelector";
+import { fetchHadithByNumber, fetchHadithsByBook } from "@/utils/hadithData";
 
 interface HadithReaderProps {
   initialCollection?: string;
@@ -48,36 +49,18 @@ export default function HadithReader({
       try {
         console.log(`Loading hadith: Collection=${currentCollection}, Book=${currentBook}, Hadith=${currentHadith}`);
         
-        // Mock data for now since we're having import issues
-        const mockHadith: Hadith = {
-          id: 1,
-          collection: currentCollection,
-          bookNumber: currentBook,
-          chapterNumber: "1",
-          hadithNumber: currentHadith,
-          arabic: "نص الحديث بالعربية",
-          english: "This is a sample hadith text in English for demonstration purposes.",
-          reference: `${currentCollection.charAt(0).toUpperCase() + currentCollection.slice(1)} ${currentBook}:${currentHadith}`,
-          grade: "Sahih",
-          narrator: "Abu Hurairah"
-        };
+        // Load the hadith using the API function
+        const loadedHadith = await fetchHadithByNumber(
+          currentCollection,
+          currentBook,
+          currentHadith
+        );
         
-        // More mock data for book hadiths
-        const mockBookHadiths: Hadith[] = Array.from({ length: 10 }, (_, i) => ({
-          id: i + 1,
-          collection: currentCollection,
-          bookNumber: currentBook,
-          chapterNumber: "1",
-          hadithNumber: (i + 1).toString(),
-          arabic: "نص الحديث بالعربية",
-          english: `This is hadith number ${i + 1} in book ${currentBook}.`,
-          reference: `${currentCollection.charAt(0).toUpperCase() + currentCollection.slice(1)} ${currentBook}:${i + 1}`,
-          grade: "Sahih",
-          narrator: "Abu Hurairah"
-        }));
-
-        setHadith(mockHadith);
-        setBookHadiths(mockBookHadiths);
+        // Load all hadiths from this book for navigation
+        const hadiths = await fetchHadithsByBook(currentCollection, currentBook);
+        
+        setHadith(loadedHadith);
+        setBookHadiths(hadiths);
         setPointsEarned(Math.floor(Math.random() * 3000) + 3000);
 
         // Update URL without reloading the page
