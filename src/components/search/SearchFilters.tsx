@@ -9,6 +9,9 @@ export interface SearchFiltersProps {
   onCollapseTerm?: (term: string) => void;
   query?: string;
   className?: string;
+  currentCollection?: string;
+  collectionsOptions?: { id: string; name: string; }[];
+  onCollectionChange?: (collectionId: string) => Promise<void>;
 }
 
 export default function SearchFilters({ 
@@ -16,7 +19,10 @@ export default function SearchFilters({
   onExpandTerm, 
   onCollapseTerm,
   query = "", 
-  className 
+  className,
+  currentCollection,
+  collectionsOptions = [],
+  onCollectionChange
 }: SearchFiltersProps) {
   const [showAllFilters, setShowAllFilters] = useState(false);
   
@@ -47,6 +53,25 @@ export default function SearchFilters({
           <h3 className="text-sm font-medium text-app-text-secondary mb-1">Current Search</h3>
           <div className="glass-card rounded-lg px-3 py-2">
             <p className="text-white">{query}</p>
+          </div>
+        </div>
+      )}
+      
+      {currentCollection && collectionsOptions && collectionsOptions.length > 0 && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-app-text-secondary mb-1">Collection</h3>
+          <div className="glass-card rounded-lg px-3 py-2">
+            <select 
+              className="w-full bg-transparent text-white outline-none"
+              value={currentCollection}
+              onChange={(e) => onCollectionChange?.(e.target.value)}
+            >
+              {collectionsOptions.map(option => (
+                <option key={option.id} value={option.id} className="bg-app-background-dark">
+                  {option.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       )}

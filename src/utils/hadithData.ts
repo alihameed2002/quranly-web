@@ -393,5 +393,23 @@ export const getRandomHadith = async (): Promise<Hadith> => {
   }
 };
 
+// Export the fetch functions to be used by components
+export const fetchHadithByNumber = async (
+  collection: string, 
+  bookNumber: string, 
+  hadithNumber: string
+): Promise<Hadith> => {
+  // We'll use our existing fetchHadith function
+  return fetchHadith(collection, bookNumber, hadithNumber);
+};
+
+export const fetchHadithsByBook = async (
+  collection: string, 
+  bookNumber: string
+): Promise<Hadith[]> => {
+  // We'll use our existing getHadithsByChapter function
+  return getHadithsByChapter(bookNumber, collection);
+};
+
 // Load on module initialization
 loadHadithData().catch(console.error);
