@@ -1,10 +1,10 @@
 
 import { Hadith } from './hadithTypes';
 import { 
-  fetchBooks as fetchBooksFromApi, 
-  fetchHadithsByBook as fetchHadithsByBookFromApi, 
-  fetchHadithByNumber as fetchHadithByNumberFromApi,
-  searchHadithsInThe9Books 
+  fetchBooks, 
+  fetchHadithsByBook, 
+  fetchHadithByNumber,
+  searchHadithsInThe9Books
 } from './the9BooksApi';
 
 // This will store all loaded hadiths from the API
@@ -28,7 +28,7 @@ export const loadHadithData = async (
     currentActiveCollection = collectionId;
     
     // Get all books in the collection
-    const books = await fetchBooksFromApi(collectionId);
+    const books = await fetchBooks(collectionId);
     console.log(`Loaded ${books.length} books from collection ${collectionId}`);
     
     // For initial load, we'll fetch hadiths from first few books to display something quickly
@@ -41,7 +41,7 @@ export const loadHadithData = async (
       console.log(`Fetching hadiths from book ${book.id}: ${book.name}`);
       
       try {
-        const hadiths = await fetchHadithsByBookFromApi(collectionId, book.id);
+        const hadiths = await fetchHadithsByBook(collectionId, book.id);
         loadedHadiths.push(...hadiths);
         console.log(`Loaded ${hadiths.length} hadiths from book ${book.id}`);
       } catch (error) {
@@ -103,7 +103,7 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
     console.error("Error in getHadithByIndex:", error);
     // Return a placeholder hadith
     return {
-      id: "error:0",
+      id: 0,
       collection: currentActiveCollection,
       bookNumber: "1",
       chapterNumber: "1",
@@ -121,7 +121,7 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
 export const getHadithChapters = async (collectionId: string = currentActiveCollection): Promise<{id: string, name: string, hadithCount: number}[]> => {
   try {
     // Always fetch fresh book data from API
-    const books = await fetchBooksFromApi(collectionId);
+    const books = await fetchBooks(collectionId);
     return books;
   } catch (error) {
     console.error("Failed to load hadith chapters:", error);
@@ -156,7 +156,7 @@ export const getHadithsByChapter = async (
 ): Promise<Hadith[]> => {
   try {
     // Always fetch fresh data for specific book
-    const hadiths = await fetchHadithsByBookFromApi(collectionId, bookNumber);
+    const hadiths = await fetchHadithsByBook(collectionId, bookNumber);
     
     // Add to cache if not already there
     if (hadiths.length > 0) {
@@ -202,7 +202,7 @@ export const fetchHadith = async (
     }
     
     // If not in cache, fetch from API
-    const hadith = await fetchHadithByNumberFromApi(collection, bookNumber, hadithNumber);
+    const hadith = await fetchHadithByNumber(collection, bookNumber, hadithNumber);
     
     // Add to cache
     cachedHadiths.push(hadith);
@@ -222,7 +222,7 @@ export const fetchHadith = async (
     
     // If everything fails, return a placeholder hadith
     return {
-      id: `${collection}:${bookNumber}:${hadithNumber}`,
+      id: 0,
       collection: collection,
       bookNumber: bookNumber,
       chapterNumber: bookNumber,
@@ -379,7 +379,7 @@ export const getRandomHadith = async (): Promise<Hadith> => {
     console.error("Error in getRandomHadith:", error);
     // Return a placeholder hadith
     return {
-      id: "random:0",
+      id: 0,
       collection: currentActiveCollection,
       bookNumber: "1",
       chapterNumber: "1",
@@ -391,24 +391,6 @@ export const getRandomHadith = async (): Promise<Hadith> => {
       narrator: 'Umar ibn Al-Khattab'
     };
   }
-};
-
-// Export the fetch functions for use by components
-export const fetchHadithByNumber = async (
-  collection: string, 
-  bookNumber: string, 
-  hadithNumber: string
-): Promise<Hadith> => {
-  // We'll use our existing fetchHadith function
-  return fetchHadith(collection, bookNumber, hadithNumber);
-};
-
-export const fetchHadithsByBook = async (
-  collection: string, 
-  bookNumber: string
-): Promise<Hadith[]> => {
-  // We'll use our existing getHadithsByChapter function
-  return getHadithsByChapter(bookNumber, collection);
 };
 
 // Load on module initialization
