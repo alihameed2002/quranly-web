@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import QuranReader from "@/components/QuranReader";
@@ -8,8 +7,8 @@ import { BookOpen } from "lucide-react";
 
 const Reading = () => {
   const [loading, setLoading] = useState(true);
-  const [currentSurah, setCurrentSurah] = useState(7); // Default to Al-Araf
-  const [currentVerse, setCurrentVerse] = useState(128); // Default to sample verse
+  const [currentSurah, setCurrentSurah] = useState(1); // Default to Al-Fatiha
+  const [currentVerse, setCurrentVerse] = useState(1); // Default to first verse
   const navigate = useNavigate();
   const location = useLocation();
   
@@ -21,8 +20,8 @@ const Reading = () => {
     
     console.log(`URL parameters: surah=${surahParam}, verse=${verseParam}`);
     
-    let validSurah = 7; // Default
-    let validVerse = 128; // Default
+    let validSurah = 1; // Default to Al-Fatiha
+    let validVerse = 1; // Default to first verse
     
     if (surahParam) {
       const surahNum = Number(surahParam);

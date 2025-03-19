@@ -1,43 +1,53 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BookOpen, ChevronRight, Loader2 } from "lucide-react";
-import { getHadithChapters, getHadithsByChapter } from "@/utils/hadithData";
+import { getBooks, getHadithsByBook, COLLECTION_MAP } from "@/utils/hadithDatabase";
 import { cn } from "@/lib/utils";
 import { Hadith } from "@/utils/hadithTypes";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 interface HadithChapterBrowserProps {
   className?: string;
   collectionId?: string;
+  onHadithClick?: (hadith: Hadith) => void;
+  isLoading?: boolean;
+}
+
+// Book interface to match what's returned by hadithDatabase's getBooks
+interface Book {
+  bookNumber: string;
+  bookName: string;
+  hadithCount: number;
 }
 
 export default function HadithChapterBrowser({ 
   className,
-  collectionId = "bukhari"
+  collectionId = "bukhari",
+  onHadithClick,
+  isLoading: externalLoading = false
 }: HadithChapterBrowserProps) {
-  const [chapters, setChapters] = useState<{id: number, name: string, hadithCount: number}[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedChapter, setExpandedChapter] = useState<number | null>(null);
-  const [chapterHadiths, setChapterHadiths] = useState<{ [key: number]: Hadith[] }>({});
-  const [loadingChapter, setLoadingChapter] = useState<number | null>(null);
+  const [expandedBook, setExpandedBook] = useState<string | null>(null);
+  const [bookHadiths, setBookHadiths] = useState<{ [key: string]: Hadith[] }>({});
+  const [loadingBook, setLoadingBook] = useState<string | null>(null);
   
   const navigate = useNavigate();
   const { toast } = useToast();
   
   useEffect(() => {
-    const loadChapters = async () => {
+    const loadBooks = async () => {
       try {
         setLoading(true);
-        const hadithChapters = await getHadithChapters(collectionId);
-        setChapters(hadithChapters);
+        const booksList = await getBooks(collectionId);
+        setBooks(booksList);
       } catch (error) {
-        console.error("Failed to load hadith chapters:", error);
+        console.error("Failed to load hadith books:", error);
         toast({
           title: "Error",
-          description: "Failed to load hadith chapters",
+          description: "Failed to load hadith books",
           variant: "destructive",
         });
       } finally {
@@ -45,45 +55,49 @@ export default function HadithChapterBrowser({
       }
     };
     
-    loadChapters();
+    loadBooks();
   }, [collectionId, toast]);
   
-  const handleExpandChapter = async (chapterId: number) => {
+  const handleExpandBook = async (bookId: string) => {
     // Toggle expansion
-    if (expandedChapter === chapterId) {
-      setExpandedChapter(null);
+    if (expandedBook === bookId) {
+      setExpandedBook(null);
       return;
     }
     
-    setExpandedChapter(chapterId);
+    setExpandedBook(bookId);
     
-    // Load chapter hadiths if they haven't been loaded yet
-    if (!chapterHadiths[chapterId]) {
-      setLoadingChapter(chapterId);
+    // Load book hadiths if they haven't been loaded yet
+    if (!bookHadiths[bookId]) {
+      setLoadingBook(bookId);
       try {
-        const hadiths = await getHadithsByChapter(chapterId, collectionId);
-        setChapterHadiths(prev => ({
+        const hadiths = await getHadithsByBook(collectionId, bookId);
+        setBookHadiths(prev => ({
           ...prev,
-          [chapterId]: hadiths
+          [bookId]: hadiths
         }));
       } catch (error) {
-        console.error(`Failed to load hadiths for chapter ${chapterId}:`, error);
+        console.error(`Failed to load hadiths for book ${bookId}:`, error);
         toast({
           title: "Error",
-          description: `Failed to load hadiths for chapter ${chapterId}`,
+          description: `Failed to load hadiths for book ${bookId}`,
           variant: "destructive",
         });
       } finally {
-        setLoadingChapter(null);
+        setLoadingBook(null);
       }
     }
   };
   
-  const navigateToHadith = (hadith: Hadith) => {
-    navigate(`/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`);
+  const handleHadithClick = (hadith: Hadith) => {
+    if (onHadithClick) {
+      onHadithClick(hadith);
+    } else {
+      navigate(`/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`);
+    }
   };
   
-  if (loading) {
+  if (loading || externalLoading) {
     return (
       <div className={cn("space-y-4", className)}>
         {Array.from({ length: 5 }).map((_, i) => (
@@ -104,10 +118,10 @@ export default function HadithChapterBrowser({
   return (
     <div className={cn("space-y-4", className)}>
       <h2 className="text-lg font-medium text-white mb-4">
-        Browse {chapters.length > 0 && chapters[0]?.name.split(' ')[0]} by Book
+        Browse {COLLECTION_MAP[collectionId]} Books
       </h2>
       
-      {chapters.length === 0 && !loading ? (
+      {books.length === 0 && !loading ? (
         <div className="glass-card rounded-lg p-8 text-center">
           <p className="text-app-text-secondary">
             No books available for this collection.
@@ -121,13 +135,13 @@ export default function HadithChapterBrowser({
           type="single"
           collapsible
           className="space-y-2"
-          value={expandedChapter ? expandedChapter.toString() : undefined}
-          onValueChange={(value) => handleExpandChapter(Number(value))}
+          value={expandedBook || undefined}
+          onValueChange={handleExpandBook}
         >
-          {chapters.map(chapter => (
+          {books.map(book => (
             <AccordionItem 
-              key={chapter.id} 
-              value={chapter.id.toString()}
+              key={book.bookNumber} 
+              value={book.bookNumber}
               className="glass-card rounded-lg overflow-hidden border-none"
             >
               <AccordionTrigger className="px-4 py-3 hover:bg-white/5 transition-colors">
@@ -136,25 +150,25 @@ export default function HadithChapterBrowser({
                     <BookOpen className="h-5 w-5 text-app-green" />
                   </div>
                   <div>
-                    <div className="text-white font-medium">{chapter.name}</div>
-                    <div className="text-app-text-secondary text-sm">{chapter.hadithCount} hadith{chapter.hadithCount !== 1 ? 's' : ''}</div>
+                    <div className="text-white font-medium">{book.bookName}</div>
+                    <div className="text-app-text-secondary text-sm">{book.hadithCount} hadith{book.hadithCount !== 1 ? 's' : ''}</div>
                   </div>
                 </div>
               </AccordionTrigger>
               
               <AccordionContent className="px-4 pb-4">
-                {loadingChapter === chapter.id ? (
+                {loadingBook === book.bookNumber ? (
                   <div className="py-6 flex justify-center">
                     <Loader2 className="h-6 w-6 text-app-green animate-spin" />
                   </div>
                 ) : (
                   <div className="space-y-2 mt-2">
-                    {chapterHadiths[chapter.id]?.length > 0 ? (
-                      chapterHadiths[chapter.id].map((hadith, index) => (
+                    {bookHadiths[book.bookNumber]?.length > 0 ? (
+                      bookHadiths[book.bookNumber].map((hadith, index) => (
                         <div 
                           key={`${hadith.collection}-${hadith.bookNumber}-${hadith.hadithNumber}`}
                           className="p-3 rounded-md hover:bg-white/5 transition-colors cursor-pointer flex items-center justify-between"
-                          onClick={() => navigateToHadith(hadith)}
+                          onClick={() => handleHadithClick(hadith)}
                         >
                           <div>
                             <div className="text-sm text-white">Hadith #{hadith.hadithNumber}</div>

@@ -16,8 +16,8 @@ interface QuranReaderProps {
 
 export default function QuranReader({ 
   className,
-  initialSurah = 7, // Default to Al-Araf
-  initialVerse = 128 // Default to the sample verse
+  initialSurah = 1, // Default to Surah Al-Fatiha
+  initialVerse = 1  // Default to first verse
 }: QuranReaderProps) {
   const { markVerseAsRead } = useProgress();
   const { toast } = useToast();

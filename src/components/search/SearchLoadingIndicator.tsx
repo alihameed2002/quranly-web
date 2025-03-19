@@ -1,25 +1,24 @@
-
-import { Database } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { Database, Search } from "lucide-react";
 
 interface SearchLoadingIndicatorProps {
-  loadingProgress: number;
+  query: string;
 }
 
-const SearchLoadingIndicator = ({ loadingProgress }: SearchLoadingIndicatorProps) => {
+const SearchLoadingIndicator = ({ query }: SearchLoadingIndicatorProps) => {
   return (
-    <div className="glass-card rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Database className="h-4 w-4 text-app-green" />
-        <span className="text-sm font-medium text-white">Loading Quran database</span>
+    <div className="glass-card rounded-xl p-6 flex items-center justify-center">
+      <div className="text-center">
+        <div className="flex justify-center mb-4">
+          <div className="h-8 w-8 border-4 border-app-green border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <div className="flex items-center gap-2 justify-center mb-2">
+          <Search className="h-4 w-4 text-app-green" />
+          <span className="text-sm font-medium text-white">Searching...</span>
+        </div>
+        <p className="text-xs text-app-text-secondary">
+          Looking for "{query}" in the hadith database
+        </p>
       </div>
-      <Progress 
-        value={loadingProgress} 
-        className="h-2 bg-white/10" 
-      />
-      <p className="text-xs mt-2 text-app-text-secondary">
-        Loading all 114 chapters for comprehensive search. This might take a moment...
-      </p>
     </div>
   );
 };

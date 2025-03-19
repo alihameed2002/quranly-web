@@ -1,13 +1,19 @@
-
 import { Info } from "lucide-react";
 
 interface SearchFiltersProps {
   expandedTerms: string[];
-  query: string;
+  currentCollection: string;
+  collectionsOptions: {id: string, name: string}[];
+  onCollectionChange: (collectionId: string) => Promise<void>;
 }
 
-const SearchFilters = ({ expandedTerms, query }: SearchFiltersProps) => {
-  if (expandedTerms.length === 0 || !query.trim()) {
+const SearchFilters = ({ 
+  expandedTerms, 
+  currentCollection, 
+  collectionsOptions, 
+  onCollectionChange 
+}: SearchFiltersProps) => {
+  if (expandedTerms.length === 0) {
     return null;
   }
   

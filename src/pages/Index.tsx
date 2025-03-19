@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import UserProfile from "@/components/UserProfile";
@@ -146,14 +145,14 @@ const Index = () => {
           <div className="px-6 glass-card rounded-xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-white font-medium">7. Al-Araf</h3>
-                <p className="text-app-text-secondary text-sm">128/206</p>
+                <h3 className="text-white font-medium">1. Al-Fatiha</h3>
+                <p className="text-app-text-secondary text-sm">1/7</p>
               </div>
               <div className="flex items-center space-x-1 text-app-text-secondary text-sm">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 21.35L10.55 20.03C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3C9.24 3 10.91 3.81 12 5.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5C22 12.28 18.6 15.36 13.45 20.04L12 21.35Z" fill="#A99FC2" />
                 </svg>
-                <span>3.1K</span>
+                <span>5.7K</span>
               </div>
             </div>
             
@@ -171,15 +170,15 @@ const Index = () => {
                 
                 <div className="space-y-3">
                   <p className="text-right text-xl leading-loose font-arabic text-white" dir="rtl">
-                    قَالَ مُوسَىٰ لِقَوْمِهِ اسْتَعِينُوا بِاللَّهِ وَاصْبِرُوا ۖ إِنَّ الْأَرْضَ لِلَّهِ يُورِثُهَا مَن يَشَاءُ مِنْ عِبَادِهِ ۖ وَالْعَاقِبَةُ لِلْمُتَّقِينَ
+                    بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
                   </p>
                   
                   <p className="text-app-text-secondary">
-                    Moses reassured his people, "Seek Allah's help and be patient. Indeed, the earth belongs to Allah (alone). He grants it to whoever He chooses of His servants. The ultimate outcome belongs (only) to the righteous."
+                    In the name of Allah, the Entirely Merciful, the Especially Merciful.
                   </p>
                   
                   <div className="flex justify-between items-center text-sm text-app-text-secondary pt-2">
-                    <span>Surah Al-A'raf (7:128)</span>
+                    <span>Surah Al-Fatiha (1:1)</span>
                     <button className="text-app-green flex items-center space-x-1">
                       <span>Read Tafsir</span>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

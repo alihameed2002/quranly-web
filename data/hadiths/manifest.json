@@ -1,0 +1,110 @@
+{
+  "name": "Hadith Database",
+  "version": "1.0.0",
+  "description": "Comprehensive database of Hadith collections from 17 books",
+  "source": "https://github.com/AhmedBaset/hadith-json",
+  "collections": [
+    {
+      "id": "bukhari", 
+      "name": "Sahih al-Bukhari", 
+      "description": "One of the six major hadith collections compiled by Imam Bukhari",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/bukhari.json"
+    },
+    {
+      "id": "muslim", 
+      "name": "Sahih Muslim", 
+      "description": "One of the six major hadith collections compiled by Imam Muslim",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/muslim.json"
+    },
+    {
+      "id": "abudawud", 
+      "name": "Sunan Abi Dawud", 
+      "description": "One of the six major hadith collections compiled by Imam Abu Dawud",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/abudawud.json"
+    },
+    {
+      "id": "tirmidhi", 
+      "name": "Jami` at-Tirmidhi", 
+      "description": "One of the six major hadith collections compiled by Imam Tirmidhi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/tirmidhi.json"
+    },
+    {
+      "id": "nasai", 
+      "name": "Sunan an-Nasa'i", 
+      "description": "One of the six major hadith collections compiled by Imam Nasa'i",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/nasai.json"
+    },
+    {
+      "id": "ibnmajah", 
+      "name": "Sunan Ibn Majah", 
+      "description": "One of the six major hadith collections compiled by Imam Ibn Majah",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/ibnmajah.json"
+    },
+    {
+      "id": "malik", 
+      "name": "Muwatta Malik", 
+      "description": "One of the earliest extant collections of hadith compiled by Imam Malik",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/malik.json"
+    },
+    {
+      "id": "ahmad", 
+      "name": "Musnad Ahmad", 
+      "description": "A collection of hadith compiled by Imam Ahmad ibn Hanbal",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/ahmad.json"
+    },
+    {
+      "id": "darimi", 
+      "name": "Sunan ad-Darimi", 
+      "description": "A hadith collection compiled by Imam Darimi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/the_9_books/darimi.json"
+    },
+    {
+      "id": "riyadussalihin", 
+      "name": "Riyad as-Salihin", 
+      "description": "A compilation of hadith about ethics and manners compiled by Imam Nawawi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/RiyadSalihin.json"
+    },
+    {
+      "id": "shamail", 
+      "name": "Shamail al-Muhammadiyah", 
+      "description": "A collection of hadith about the Prophet's appearance and character by Imam Tirmidhi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/shamail.json"
+    },
+    {
+      "id": "bulugh", 
+      "name": "Bulugh al-Maram", 
+      "description": "A hadith collection by Ibn Hajar al-Asqalani containing hadith about Islamic jurisprudence",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/bulugh.json"
+    },
+    {
+      "id": "adab", 
+      "name": "Al-Adab Al-Mufrad", 
+      "description": "A hadith collection about good manners by Imam Bukhari",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/adab.json"
+    },
+    {
+      "id": "mishkat", 
+      "name": "Mishkat al-Masabih", 
+      "description": "A collection of hadith compiled by Imam Khatib al-Tabrizi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/other_books/mishkat.json"
+    },
+    {
+      "id": "nawawi40", 
+      "name": "The Forty Hadith of al-Imam an-Nawawi", 
+      "description": "A collection of 40 important hadith compiled by Imam Nawawi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/forties/nawawi40.json"
+    },
+    {
+      "id": "qudsi40", 
+      "name": "The Forty Hadith Qudsi", 
+      "description": "A collection of 40 hadith qudsi (divine hadith) where Allah speaks through the Prophet",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/forties/qudsi40.json"
+    },
+    {
+      "id": "shah40", 
+      "name": "The Forty Hadith of Shah Waliullah", 
+      "description": "A collection of 40 hadith compiled by Shah Waliullah al-Dehlawi",
+      "url": "https://raw.githubusercontent.com/AhmedBaset/hadith-json/main/db/by_book/forties/shah40.json"
+    }
+  ]
+} 

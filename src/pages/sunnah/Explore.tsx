@@ -1,11 +1,15 @@
-
 import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, Search, Compass, Globe } from "lucide-react";
-import { searchHadith, loadHadithData } from "@/utils/hadithData";
-import { fetchCollections } from "@/utils/the9BooksApi";
+import { 
+  searchHadiths, 
+  getBooks, 
+  loadCollection,
+  listCollections,
+  COLLECTION_MAP 
+} from "@/utils/hadithDatabase";
 import { Hadith } from "@/utils/hadithTypes";
 import SearchBar from "@/components/search/SearchBar";
 import SearchFilters from "@/components/search/SearchFilters";
@@ -14,7 +18,7 @@ import SunnahSearchResults from "@/components/search/SunnahSearchResults";
 import HadithChapterBrowser from "@/components/HadithChapterBrowser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const SunnahExplore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,8 +42,11 @@ const SunnahExplore = () => {
   useEffect(() => {
     const loadAvailableCollections = async () => {
       try {
-        const fetchedCollections = await fetchCollections();
-        setCollections(fetchedCollections);
+        const availableCollections = await listCollections();
+        setCollections(availableCollections.map(c => ({
+          id: c.id,
+          name: c.name
+        })));
       } catch (error) {
         console.error("Error loading collections:", error);
         toast({
@@ -93,11 +100,15 @@ const SunnahExplore = () => {
     setActiveCollection(collectionId);
     
     try {
-      await loadHadithData(collectionId, true);
-      toast({
-        title: "Collection Changed",
-        description: `Now browsing ${collections.find(c => c.id === collectionId)?.name || collectionId}`,
-      });
+      const collectionData = await loadCollection(collectionId);
+      if (collectionData) {
+        toast({
+          title: "Collection Changed",
+          description: `Now browsing ${COLLECTION_MAP[collectionId] || collectionId}`,
+        });
+      } else {
+        throw new Error("Failed to load collection");
+      }
     } catch (error) {
       console.error(`Error loading collection ${collectionId}:`, error);
       toast({
@@ -134,7 +145,7 @@ const SunnahExplore = () => {
     setActiveTab("search");
     
     try {
-      const results = await searchHadith(queryToUse);
+      const results = await searchHadiths(queryToUse, activeCollection ? [activeCollection] : []);
       console.log(`Found ${results.length} results for "${queryToUse}"`);
       setSearchResults(results);
       
@@ -248,66 +259,63 @@ const SunnahExplore = () => {
               <div className="mt-3">
                 <SearchFilters
                   expandedTerms={expandedTerms}
-                  query={searchQuery}
+                  currentCollection={activeCollection}
+                  collectionsOptions={collections}
+                  onCollectionChange={handleCollectionChange}
                 />
               </div>
               
-              {isSearching && (
-                <SearchLoadingIndicator loadingProgress={75} />
-              )}
-              
-              <div 
-                className="pb-4 overflow-y-auto"
-                ref={resultsContainerRef}
-              >
-                <SunnahSearchResults
-                  results={searchResults}
-                  isSearching={isSearching}
-                  query={searchQuery}
-                  isInitializing={isInitializing}
-                  navigateToHadith={navigateToHadith}
-                  handleSearch={handleSearch}
-                />
+              <div ref={resultsContainerRef} className="overflow-y-auto max-h-[calc(100vh-300px)]">
+                {isSearching ? (
+                  <SearchLoadingIndicator query={searchQuery} />
+                ) : (
+                  searchResults.length > 0 ? (
+                    <SunnahSearchResults 
+                      results={searchResults} 
+                      onResultClick={navigateToHadith}
+                      query={searchQuery}
+                    />
+                  ) : searchQuery.trim() ? (
+                    <div className="text-center py-12 text-app-text-secondary">
+                      No results found for "{searchQuery}"
+                    </div>
+                  ) : (
+                    <div className="text-center py-12 text-app-text-secondary">
+                      Enter a search query to find hadiths
+                    </div>
+                  )
+                )}
               </div>
             </TabsContent>
             
             <TabsContent value="browse">
-              <HadithChapterBrowser collectionId={activeCollection} />
+              <HadithChapterBrowser 
+                collectionId={activeCollection}
+                onHadithClick={navigateToHadith}
+                isLoading={isLoadingCollection}
+              />
             </TabsContent>
             
-            <TabsContent value="collections">
-              <div className="glass-card rounded-lg p-6">
-                <h2 className="text-lg font-medium text-white mb-4">Hadith Collections</h2>
-                <div className="space-y-3">
-                  {collections.length > 0 ? (
-                    collections.map((collection, index) => (
-                      <div 
-                        key={collection.id}
-                        className="p-4 rounded-lg flex items-center justify-between glass-card hover:bg-white/5 cursor-pointer"
-                        onClick={() => {
-                          handleCollectionChange(collection.id);
-                          setActiveTab("browse");
-                        }}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <BookOpen className="h-5 w-5 text-app-green" />
-                          <span className="text-white">{collection.name}</span>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-app-text-secondary py-6">
-                      {isLoadingCollection ? (
-                        <div className="flex flex-col items-center">
-                          <div className="h-8 w-8 border-4 border-app-green border-t-transparent rounded-full animate-spin mb-2"></div>
-                          <p>Loading collections...</p>
-                        </div>
-                      ) : (
-                        <p>No collections available</p>
-                      )}
-                    </div>
-                  )}
-                </div>
+            <TabsContent value="collections" className="space-y-4">
+              <h3 className="text-lg font-medium text-white">Hadith Collections</h3>
+              <p className="text-app-text-secondary mb-4">
+                Select a hadith collection to browse and study
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {collections.map(collection => (
+                  <div
+                    key={collection.id}
+                    className="glass-card p-4 rounded-lg cursor-pointer hover:bg-white/5 transition"
+                    onClick={() => {
+                      handleCollectionChange(collection.id);
+                      setActiveTab("browse");
+                    }}
+                  >
+                    <h4 className="text-white font-medium">{collection.name}</h4>
+                    <p className="text-sm text-app-text-secondary">{collection.id === activeCollection ? "Currently selected" : "Click to browse"}</p>
+                  </div>
+                ))}
               </div>
             </TabsContent>
           </Tabs>

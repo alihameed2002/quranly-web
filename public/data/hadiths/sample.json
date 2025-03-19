@@ -1,0 +1,81 @@
+{
+  "id": "sample",
+  "metadata": {
+    "id": "sample",
+    "length": 5,
+    "title": "Sample Hadith Collection",
+    "author": "Quranly Team",
+    "introduction": "This is a sample collection used when the API is unavailable."
+  },
+  "chapters": [
+    {
+      "id": "1",
+      "bookId": "sample",
+      "arabic": "كتاب العلم",
+      "english": "The Book of Knowledge"
+    },
+    {
+      "id": "2",
+      "bookId": "sample",
+      "arabic": "كتاب الإيمان",
+      "english": "The Book of Faith"
+    }
+  ],
+  "hadiths": [
+    {
+      "id": "1",
+      "idInBook": 1,
+      "chapterId": "1",
+      "bookId": "1",
+      "arabic": "إنَّمَا الأَعْمَالُ بِالنِّيَّاتِ، وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+      "english": {
+        "narrator": "Narrated by Umar bin Al-Khattab (RA)",
+        "text": "The reward of deeds depends upon the intentions and every person will get the reward according to what he has intended."
+      }
+    },
+    {
+      "id": "2",
+      "idInBook": 2,
+      "chapterId": "1",
+      "bookId": "1",
+      "arabic": "طلب العلم فريضة على كل مسلم",
+      "english": {
+        "narrator": "Narrated by Anas bin Malik (RA)",
+        "text": "Seeking knowledge is an obligation upon every Muslim."
+      }
+    },
+    {
+      "id": "3",
+      "idInBook": 3,
+      "chapterId": "1",
+      "bookId": "1",
+      "arabic": "من سلك طريقا يلتمس فيه علما سهل الله له طريقا إلى الجنة",
+      "english": {
+        "narrator": "Narrated by Abu Hurairah (RA)",
+        "text": "Whoever takes a path in search of knowledge, Allah makes the path to Paradise easy for him."
+      }
+    },
+    {
+      "id": "4",
+      "idInBook": 1,
+      "chapterId": "2",
+      "bookId": "2",
+      "arabic": "الإيمان بضع وسبعون شعبة والحياء شعبة من الإيمان",
+      "english": {
+        "narrator": "Narrated by Abu Hurairah (RA)",
+        "text": "Faith has seventy-odd branches, and modesty is a branch of faith."
+      }
+    },
+    {
+      "id": "5",
+      "idInBook": 2,
+      "chapterId": "2",
+      "bookId": "2",
+      "arabic": "لا يؤمن أحدكم حتى يحب لأخيه ما يحب لنفسه",
+      "english": {
+        "narrator": "Narrated by Anas bin Malik (RA)",
+        "text": "None of you [truly] believes until he loves for his brother what he loves for himself."
+      }
+    }
+  ]
+} 

@@ -1,24 +1,25 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
 import { BookOpen, RefreshCw, AlertTriangle } from "lucide-react";
-import { fetchHadith, getHadithByIndex, getAllHadiths, loadHadithData } from "@/utils/hadithData";
+import { loadCollection, getAllHadiths, COLLECTION_MAP } from "@/utils/hadithDatabase";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 
 const SunnahReading = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentCollection, setCurrentCollection] = useState("bukhari");
-  const [currentBook, setCurrentBook] = useState(1);
-  const [currentHadith, setCurrentHadith] = useState(1);
+  const [currentBook, setCurrentBook] = useState("1");
+  const [currentHadith, setCurrentHadith] = useState("1");
   const [noData, setNoData] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [debugData, setDebugData] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   
   // Preload hadiths to ensure navigation works
   useEffect(() => {
@@ -26,10 +27,9 @@ const SunnahReading = () => {
       try {
         console.log("Preloading hadiths...");
         setLoading(true);
-        await loadHadithData(currentCollection);
-        const allHadiths = await getAllHadiths();
+        const collectionData = await loadCollection(currentCollection);
         
-        if (allHadiths.length === 0) {
+        if (!collectionData || collectionData.hadiths.length === 0) {
           console.log("No hadiths found, using fallback data");
           setNoData(true);
         } else {
@@ -69,13 +69,17 @@ const SunnahReading = () => {
         if (indexParam) {
           const index = parseInt(indexParam);
           if (!isNaN(index) && index >= 0) {
-            const hadith = await getHadithByIndex(index);
-            console.log(`Loaded hadith by index ${index}:`, hadith);
-            setCurrentCollection(hadith.collection);
-            setCurrentBook(hadith.bookNumber);
-            setCurrentHadith(hadith.hadithNumber);
-            setLoading(false);
-            return;
+            const collection = collectionParam || currentCollection;
+            const allHadiths = await getAllHadiths(collection);
+            if (allHadiths.length > index) {
+              const hadith = allHadiths[index];
+              console.log(`Loaded hadith by index ${index}:`, hadith);
+              setCurrentCollection(hadith.collection);
+              setCurrentBook(hadith.bookNumber);
+              setCurrentHadith(hadith.hadithNumber);
+              setLoading(false);
+              return;
+            }
           }
         }
         
@@ -87,20 +91,16 @@ const SunnahReading = () => {
         }
         
         if (bookParam) {
-          const bookNum = Number(bookParam);
-          if (!isNaN(bookNum) && bookNum >= 1) {
-            setCurrentBook(bookNum);
-          }
+          setCurrentBook(bookParam);
+        } else {
+          setCurrentBook("1");
         }
         
         if (hadithParam) {
-          const hadithNum = Number(hadithParam);
-          if (!isNaN(hadithNum) && hadithNum >= 1) {
-            setCurrentHadith(hadithNum);
-          }
+          setCurrentHadith(hadithParam);
         } else {
           // If no hadith is specified, default to hadith 1
-          setCurrentHadith(1);
+          setCurrentHadith("1");
         }
         
         // If we have no parameters at all, update the URL with the defaults
@@ -109,7 +109,7 @@ const SunnahReading = () => {
         }
         
         // Ensure data is loaded for the selected collection
-        await loadHadithData(collectionParam || "bukhari");
+        await loadCollection(collectionParam || "bukhari");
         
         setLoading(false);
       } catch (error) {
@@ -127,12 +127,21 @@ const SunnahReading = () => {
     setLoading(true);
     
     try {
-      await loadHadithData(currentCollection, true); // Force refresh
+      const collectionData = await loadCollection(currentCollection);
       setLoading(false);
-      toast({
-        title: "Success",
-        description: "Hadith data loaded successfully",
-      });
+      if (collectionData && collectionData.hadiths.length > 0) {
+        setNoData(false);
+        toast({
+          title: "Success",
+          description: "Hadith data loaded successfully",
+        });
+      } else {
+        setNoData(true);
+        toast({
+          title: "Notice",
+          description: "Using sample data as API is currently unavailable",
+        });
+      }
     } catch (error) {
       console.error("Failed to load hadith data on retry:", error);
       setError("Using sample hadith data as the API is currently unavailable.");
@@ -142,6 +151,51 @@ const SunnahReading = () => {
         title: "Notice",
         description: "Using sample data as API is currently unavailable",
       });
+    }
+  };
+  
+  const handleDebug = async () => {
+    try {
+      setLoading(true);
+      
+      // Check if the manifest exists
+      const manifestResponse = await fetch('/data/hadiths/manifest.json');
+      if (!manifestResponse.ok) {
+        throw new Error(`Manifest not found: ${manifestResponse.statusText}`);
+      }
+      
+      const manifestData = await manifestResponse.json();
+      
+      // Find the collection URL
+      const collection = manifestData.collections.find((c: any) => c.id === currentCollection);
+      if (!collection) {
+        throw new Error(`Collection ${currentCollection} not found in manifest`);
+      }
+      
+      // Try to load the collection data
+      const collectionResponse = await fetch(collection.url);
+      if (!collectionResponse.ok) {
+        throw new Error(`Failed to load collection from ${collection.url}: ${collectionResponse.statusText}`);
+      }
+      
+      const rawData = await collectionResponse.json();
+      
+      setDebugData({
+        manifest: manifestData,
+        collection: rawData,
+        url: collection.url
+      });
+      
+      setShowDebug(true);
+      setLoading(false);
+    } catch (error) {
+      console.error('Debug error:', error);
+      toast({
+        title: "Debug Info",
+        description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+      setLoading(false);
     }
   };
   
@@ -161,7 +215,7 @@ const SunnahReading = () => {
       <div className="min-h-screen bg-app-background flex items-center justify-center">
         <div className="glass-card rounded-lg p-8 flex flex-col items-center justify-center text-center">
           <AlertTriangle className="h-12 w-12 text-amber-400 mb-4" />
-          <div className="mb-4 text-white text-lg">API Unavailable</div>
+          <div className="mb-4 text-white text-lg">Hadith Data Unavailable</div>
           <p className="text-app-text-secondary mb-4">{error}</p>
           <div className="flex gap-4">
             <Button 
@@ -197,7 +251,7 @@ const SunnahReading = () => {
           <div>
             <h1 className="text-2xl font-semibold text-white">Reading Sunnah</h1>
             <p className="text-app-text-secondary">
-              {noData ? "Sample hadith data (API unavailable)" : "Authentic hadith collections"}
+              {noData ? "Sample hadith data (API unavailable)" : `Authentic hadith collection: ${COLLECTION_MAP[currentCollection] || currentCollection}`}
               {noData && (
                 <Button 
                   onClick={handleRetry} 
@@ -216,6 +270,57 @@ const SunnahReading = () => {
           initialBook={currentBook}
           initialHadith={currentHadith}
         />
+        
+        {/* Debug section */}
+        <div className="px-6 pt-4">
+          <Button
+            onClick={handleDebug}
+            variant="outline"
+            size="sm"
+            className="text-xs border-app-border"
+          >
+            Debug Collection Data
+          </Button>
+          
+          {showDebug && debugData && (
+            <div className="mt-4 p-4 bg-gray-900 rounded text-xs overflow-auto max-h-[400px]">
+              <h3 className="text-white font-medium mb-2">Collection URL:</h3>
+              <p className="text-app-text-secondary break-all mb-4">{debugData.url}</p>
+              
+              <h3 className="text-white font-medium mb-2">Collection Structure:</h3>
+              <pre className="text-app-text-secondary">
+                {JSON.stringify({
+                  id: debugData.collection.id,
+                  metadata: debugData.collection.metadata ? 'present' : 'missing',
+                  chapters: Array.isArray(debugData.collection.chapters) 
+                    ? `${debugData.collection.chapters.length} items` 
+                    : 'missing',
+                  hadiths: Array.isArray(debugData.collection.hadiths) 
+                    ? `${debugData.collection.hadiths.length} items` 
+                    : 'missing',
+                }, null, 2)}
+              </pre>
+              
+              {debugData.collection.hadiths && debugData.collection.hadiths.length > 0 && (
+                <>
+                  <h3 className="text-white font-medium mt-4 mb-2">Sample Hadith:</h3>
+                  <pre className="text-app-text-secondary">
+                    {JSON.stringify(debugData.collection.hadiths[0], null, 2)}
+                  </pre>
+                </>
+              )}
+              
+              <Button
+                onClick={() => setShowDebug(false)}
+                variant="outline"
+                size="sm"
+                className="mt-4 text-xs border-app-border"
+              >
+                Close Debug Info
+              </Button>
+            </div>
+          )}
+        </div>
       </main>
       
       <Navigation />

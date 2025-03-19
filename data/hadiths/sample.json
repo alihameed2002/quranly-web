@@ -1,0 +1,72 @@
+{
+  "metadata": {
+    "title": "Sample Hadith Collection",
+    "sections": [
+      {
+        "book": "1",
+        "name": "Book of Faith",
+        "hadith_count": 20
+      },
+      {
+        "book": "2",
+        "name": "Book of Knowledge",
+        "hadith_count": 15
+      },
+      {
+        "book": "3",
+        "name": "Book of Prayer",
+        "hadith_count": 15
+      }
+    ]
+  },
+  "hadiths": [
+    {
+      "id": 1,
+      "book": 1,
+      "number": 1,
+      "arabic": "إِنَّمَا الأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى",
+      "text": "The rewards of deeds depend upon the intentions and every person will get the reward according to what he has intended.",
+      "narrator": "Umar ibn Al-Khattab"
+    },
+    {
+      "id": 2,
+      "book": 1,
+      "number": 2,
+      "arabic": "بُنِيَ الإِسْلاَمُ عَلَى خَمْسٍ",
+      "text": "Islam has been built upon five things - on testifying that there is no god save Allah, and that Muhammad is His Messenger; on performing salah; on giving the zakah; on Hajj to the House; and on fasting during Ramadan.",
+      "narrator": "Ibn Umar"
+    },
+    {
+      "id": 3,
+      "book": 1,
+      "number": 3,
+      "arabic": "مَنْ أَحْدَثَ فِي أَمْرِنَا هَذَا مَا لَيْسَ مِنْهُ فَهُوَ رَدٌّ",
+      "text": "He who innovates something in this matter of ours that is not of it will have it rejected.",
+      "narrator": "Aisha"
+    },
+    {
+      "id": 21,
+      "book": 2,
+      "number": 1,
+      "arabic": "طَلَبُ الْعِلْمِ فَرِيضَةٌ عَلَى كُلِّ مُسْلِمٍ",
+      "text": "Seeking knowledge is an obligation upon every Muslim.",
+      "narrator": "Anas ibn Malik"
+    },
+    {
+      "id": 22,
+      "book": 2,
+      "number": 2,
+      "arabic": "مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ طَرِيقًا إِلَى الْجَنَّةِ",
+      "text": "Whoever follows a path in pursuit of knowledge, Allah makes his path to Paradise easy.",
+      "narrator": "Abu Hurairah"
+    },
+    {
+      "id": 41,
+      "book": 3,
+      "number": 1,
+      "arabic": "الصَّلَوَاتُ الْخَمْسُ وَالْجُمْعَةُ إِلَى الْجُمْعَةِ كَفَّارَةٌ لِمَا بَيْنَهُنَّ",
+      "text": "The five prayers and the Friday prayer to the next Friday prayer are expiations for what is between them.",
+      "narrator": "Abu Hurairah"
+    }
+  ]
+} 

@@ -1,147 +1,112 @@
-
-import { Share, Bookmark } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { useToast } from "@/hooks/use-toast";
 import { Hadith } from "@/utils/hadithTypes";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { BookOpenText, Bookmark, Share, ChevronsUp, ChevronsDown } from "lucide-react";
 
 interface HadithCardProps {
   hadith: Hadith;
-  className?: string;
-  minimized?: boolean;
-  onClick?: () => void;
+  onClick?: (hadith: Hadith) => void;
+  showBookmark?: boolean;
+  showShare?: boolean;
+  isExpanded?: boolean;
 }
 
-export default function HadithCard({
+const HadithCard = ({
   hadith,
-  className,
-  minimized = false,
-  onClick
-}: HadithCardProps) {
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const { toast } = useToast();
+  onClick,
+  showBookmark = true,
+  showShare = true,
+  isExpanded = false,
+}: HadithCardProps) => {
+  const [expanded, setExpanded] = useState(isExpanded);
 
-  const toggleBookmark = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsBookmarked(!isBookmarked);
-    toast({
-      title: isBookmarked ? "Bookmark removed" : "Bookmark added",
-      description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
-    });
-  };
-
-  const handleShare = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    // Create share URL
-    const shareUrl = `/sunnah/reading?collection=${encodeURIComponent(hadith.collection)}&book=${hadith.bookNumber}&hadith=${hadith.hadithNumber}`;
-    
-    // Try to use the Web Share API if available
-    if (navigator.share) {
-      navigator.share({
-        title: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
-        text: hadith.english.substring(0, 100) + '...',
-        url: window.location.origin + shareUrl,
-      }).catch((error) => console.log('Error sharing', error));
-    } else {
-      // Fallback to copying to clipboard
-      navigator.clipboard.writeText(window.location.origin + shareUrl)
-        .then(() => {
-          toast({
-            title: "Link copied to clipboard",
-            description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
-          });
-        })
-        .catch((error) => {
-          console.error('Could not copy link: ', error);
-          toast({
-            title: "Sharing hadith",
-            description: `${hadith.collection} (${hadith.bookNumber}:${hadith.hadithNumber})`,
-          });
-        });
+  const handleClick = () => {
+    if (onClick) {
+      onClick(hadith);
     }
   };
 
-  // Format the book name for display
-  const getBookName = () => {
-    return `Book ${hadith.bookNumber}`;
+  const handleToggleExpand = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpanded(!expanded);
   };
 
-  if (minimized) {
-    return (
-      <div 
-        className={cn("w-full cursor-pointer", className)}
-        onClick={onClick}
-      >
-        <div className="flex flex-col mb-2">
-          <h3 className="text-white font-medium">{hadith.collection}</h3>
-          <p className="text-app-text-secondary text-sm">
-            Book {hadith.bookNumber} : Hadith {hadith.hadithNumber}
-            {hadith.narrator && ` • ${hadith.narrator}`}
-          </p>
-        </div>
-        <div className="text-right mb-2 text-lg font-arabic text-white" dir="rtl">
-          {hadith.arabic.length > 100 ? hadith.arabic.substring(0, 100) + '...' : hadith.arabic}
-        </div>
-        <div className="text-app-text-secondary text-sm">
-          {hadith.english.length > 120 ? hadith.english.substring(0, 120) + '...' : hadith.english}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={cn("w-full space-y-4 animate-fade-in", className)}>
-      <div className="flex items-center gap-3 px-6">
-        <div className="flex-1">
-          <h2 className="text-lg font-medium text-white">
-            {hadith.collection}
-          </h2>
-          <p className="text-sm text-app-text-secondary">
-            {getBookName()}
-          </p>
-          <p className="text-sm text-app-green">
-            Hadith #{hadith.hadithNumber}
-            {hadith.narrator && ` • Narrated by ${hadith.narrator}`}
-          </p>
-        </div>
-        
-        <div className="flex items-center space-x-3">
-          <button 
-            onClick={toggleBookmark}
-            className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300"
+    <Card 
+      className="bg-app-background-dark border-white/10 rounded-lg mb-4 hover:border-white/30 transition"
+      onClick={handleClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex items-center mb-2">
+            <BookOpenText className="w-4 h-4 mr-2 text-primary" />
+            <span className="text-sm font-medium text-primary">{hadith.reference}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="p-0 h-6 w-6"
+            onClick={handleToggleExpand}
+            aria-label={expanded ? "Collapse hadith" : "Expand hadith"}
           >
-            <Bookmark 
-              className={cn(
-                "h-5 w-5 transition-all duration-300",
-                isBookmarked ? "text-app-green fill-app-green" : "text-white"
-              )} 
-            />
-          </button>
+            {expanded ? (
+              <ChevronsUp className="h-4 w-4 text-white/70" />
+            ) : (
+              <ChevronsDown className="h-4 w-4 text-white/70" />
+            )}
+          </Button>
         </div>
-      </div>
-      
-      <div className="rounded-lg neo-blur p-6 space-y-6">
-        <div dir="rtl" className="w-full text-right leading-loose font-arabic text-2xl">
-          {hadith.arabic}
-        </div>
-        
-        <button 
-          onClick={handleShare}
-          className="h-10 w-10 rounded-full flex items-center justify-center glass-card hover:bg-white/10 transition-all duration-300 mx-auto"
-        >
-          <Share className="h-5 w-5 text-white" />
-        </button>
-      </div>
-      
-      <div className="px-4 py-6 text-lg text-app-text-secondary">
-        {hadith.english}
-      </div>
-      
-      <div className="text-center text-sm text-app-text-secondary">
-        <p>{hadith.reference}</p>
-        {hadith.grade && <p className="text-app-green">{hadith.grade}</p>}
-      </div>
-    </div>
+
+        {hadith.narrator && (
+          <p className="text-sm font-medium text-green-500 mb-2">
+            {hadith.narrator}
+          </p>
+        )}
+
+        {expanded && hadith.arabic && (
+          <div className="py-2 mb-3 font-arabic text-lg text-end text-white">
+            {hadith.arabic}
+          </div>
+        )}
+
+        <p className="text-white">{hadith.english}</p>
+
+        {hadith.grade && (
+          <p className="text-xs text-orange-400 mt-2">
+            Grade: {hadith.grade}
+          </p>
+        )}
+      </CardContent>
+
+      {(showBookmark || showShare) && (
+        <CardFooter className="px-4 py-2 border-t border-white/10 flex justify-end gap-2">
+          {showBookmark && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-white/70 hover:text-white hover:bg-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Bookmark className="h-4 w-4 mr-2" />
+              Save
+            </Button>
+          )}
+          {showShare && (
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-white/70 hover:text-white hover:bg-white/10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Share className="h-4 w-4 mr-2" />
+              Share
+            </Button>
+          )}
+        </CardFooter>
+      )}
+    </Card>
   );
-}
+};
+
+export default HadithCard;
