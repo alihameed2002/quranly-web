@@ -1,42 +1,102 @@
-import { Info } from "lucide-react";
 
-interface SearchFiltersProps {
+import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+export interface SearchFiltersProps {
   expandedTerms: string[];
-  currentCollection: string;
-  collectionsOptions: {id: string, name: string}[];
-  onCollectionChange: (collectionId: string) => Promise<void>;
+  onExpandTerm?: (term: string) => void;
+  onCollapseTerm?: (term: string) => void;
+  query?: string;
+  className?: string;
 }
 
-const SearchFilters = ({ 
+export default function SearchFilters({ 
   expandedTerms, 
-  currentCollection, 
-  collectionsOptions, 
-  onCollectionChange 
-}: SearchFiltersProps) => {
-  if (expandedTerms.length === 0) {
-    return null;
-  }
+  onExpandTerm, 
+  onCollapseTerm,
+  query = "", 
+  className 
+}: SearchFiltersProps) {
+  const [showAllFilters, setShowAllFilters] = useState(false);
+  
+  const toggleTerm = (term: string) => {
+    if (expandedTerms.includes(term)) {
+      onCollapseTerm?.(term);
+    } else {
+      onExpandTerm?.(term);
+    }
+  };
+  
+  const isTermExpanded = (term: string) => expandedTerms.includes(term);
+  
+  const filters = [
+    { id: "collection", name: "Collection" },
+    { id: "book", name: "Book" },
+    { id: "narrator", name: "Narrator" },
+    { id: "topic", name: "Topic" },
+    { id: "grade", name: "Grade" }
+  ];
+  
+  const visibleFilters = showAllFilters ? filters : filters.slice(0, 3);
   
   return (
-    <div>
-      <div className="flex items-center gap-1 text-xs text-app-text-secondary">
-        <Info className="h-3 w-3" />
-        <span>Search includes related terms:</span>
-      </div>
-      <div className="mt-1 flex flex-wrap gap-1">
-        {expandedTerms.slice(0, 10).map((term, i) => (
-          <span key={i} className="px-2 py-0.5 bg-white/5 rounded-full text-xs text-app-text-secondary">
-            {term}
-          </span>
+    <div className={cn("px-6 space-y-2", className)}>
+      {query && (
+        <div className="mb-4">
+          <h3 className="text-sm font-medium text-app-text-secondary mb-1">Current Search</h3>
+          <div className="glass-card rounded-lg px-3 py-2">
+            <p className="text-white">{query}</p>
+          </div>
+        </div>
+      )}
+      
+      <h3 className="text-sm font-medium text-app-text-secondary">Filters</h3>
+      
+      <div className="space-y-2">
+        {visibleFilters.map((filter) => (
+          <div key={filter.id} className="glass-card rounded-lg overflow-hidden">
+            <button
+              onClick={() => toggleTerm(filter.id)}
+              className="w-full px-4 py-3 flex justify-between items-center"
+            >
+              <span className="text-white">{filter.name}</span>
+              {isTermExpanded(filter.id) ? (
+                <ChevronUp className="h-4 w-4 text-app-text-secondary" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-app-text-secondary" />
+              )}
+            </button>
+            
+            {isTermExpanded(filter.id) && (
+              <div className="px-4 py-3 border-t border-white/10">
+                <p className="text-app-text-secondary text-sm">
+                  Filter options for {filter.name} would appear here.
+                </p>
+              </div>
+            )}
+          </div>
         ))}
-        {expandedTerms.length > 10 && (
-          <span className="px-2 py-0.5 rounded-full text-xs text-app-text-secondary">
-            +{expandedTerms.length - 10} more
-          </span>
-        )}
       </div>
+      
+      {filters.length > 3 && (
+        <button
+          onClick={() => setShowAllFilters(!showAllFilters)}
+          className="text-sm text-app-green flex items-center"
+        >
+          {showAllFilters ? (
+            <>
+              <ChevronUp className="h-3 w-3 mr-1" />
+              Show less filters
+            </>
+          ) : (
+            <>
+              <ChevronDown className="h-3 w-3 mr-1" />
+              Show all filters
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
-};
-
-export default SearchFilters;
+}

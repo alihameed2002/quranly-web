@@ -1,3 +1,4 @@
+
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import VerseCard from "./VerseCard";
@@ -7,6 +8,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
+import QuranChapterSelector from "./QuranChapterSelector";
 
 interface QuranReaderProps {
   className?: string;
@@ -141,6 +143,15 @@ export default function QuranReader({
     });
   };
   
+  const handleSelectSurah = (surahNumber: number) => {
+    setCurrentSurah(surahNumber);
+    setCurrentVerseNumber(1); // Reset to first verse when changing surah
+  };
+  
+  const handleSelectVerse = (verseNumber: number) => {
+    setCurrentVerseNumber(verseNumber);
+  };
+  
   const returnToSearchResults = () => {
     console.log("Returning to search results with:", {
       query: searchQuery,
@@ -184,8 +195,8 @@ export default function QuranReader({
   
   return (
     <div className={cn("w-full space-y-6 pb-24", className)}>
-      {fromSearch && (
-        <div className="px-6 pt-2">
+      <div className="px-6 flex items-center justify-between">
+        {fromSearch && (
           <Button 
             variant="outline" 
             onClick={returnToSearchResults}
@@ -194,8 +205,15 @@ export default function QuranReader({
             <Search className="h-4 w-4 mr-2" />
             Return to Results
           </Button>
-        </div>
-      )}
+        )}
+        
+        <QuranChapterSelector
+          currentSurah={currentSurah}
+          currentVerse={currentVerseNumber}
+          onSelectSurah={handleSelectSurah}
+          onSelectVerse={handleSelectVerse}
+        />
+      </div>
       
       {verseData && surahData && (
         <VerseCard 

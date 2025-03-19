@@ -1,26 +1,31 @@
-import { Database, Search } from "lucide-react";
 
-interface SearchLoadingIndicatorProps {
-  query: string;
+import { cn } from "@/lib/utils";
+
+export interface SearchLoadingIndicatorProps {
+  loadingProgress?: number;
+  className?: string;
 }
 
-const SearchLoadingIndicator = ({ query }: SearchLoadingIndicatorProps) => {
+export default function SearchLoadingIndicator({ 
+  loadingProgress = 0,
+  className 
+}: SearchLoadingIndicatorProps) {
+  const progressWidth = `${loadingProgress}%`;
+  
   return (
-    <div className="glass-card rounded-xl p-6 flex items-center justify-center">
-      <div className="text-center">
-        <div className="flex justify-center mb-4">
-          <div className="h-8 w-8 border-4 border-app-green border-t-transparent rounded-full animate-spin"></div>
+    <div className={cn("w-full px-6 py-2", className)}>
+      <div className="flex flex-col space-y-1">
+        <div className="flex justify-between items-center">
+          <p className="text-xs text-app-text-secondary">Loading results...</p>
+          <span className="text-xs text-app-text-secondary">{loadingProgress}%</span>
         </div>
-        <div className="flex items-center gap-2 justify-center mb-2">
-          <Search className="h-4 w-4 text-app-green" />
-          <span className="text-sm font-medium text-white">Searching...</span>
+        <div className="w-full h-1 bg-app-background-light rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-app-green transition-all duration-300 rounded-full" 
+            style={{ width: progressWidth }}
+          ></div>
         </div>
-        <p className="text-xs text-app-text-secondary">
-          Looking for "{query}" in the hadith database
-        </p>
       </div>
     </div>
   );
-};
-
-export default SearchLoadingIndicator;
+}
