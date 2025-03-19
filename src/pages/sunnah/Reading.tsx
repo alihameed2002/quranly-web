@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
@@ -203,7 +204,7 @@ const SunnahReading = () => {
     return (
       <div className="min-h-screen bg-app-background flex items-center justify-center">
         <div className="glass-card rounded-lg p-8 flex flex-col items-center justify-center animate-pulse-gentle">
-          <div className="h-10 w-10 border-4 border-app-green border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="h-10 w-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-app-text-secondary">Loading hadith collection...</p>
         </div>
       </div>
@@ -220,7 +221,7 @@ const SunnahReading = () => {
           <div className="flex gap-4">
             <Button 
               onClick={handleRetry}
-              className="bg-app-green hover:bg-app-green-light text-app-background-dark"
+              className="bg-teal-500 hover:bg-teal-600 text-app-background-dark"
             >
               <RefreshCw className="h-4 w-4 mr-2" /> 
               Retry Connection
@@ -245,7 +246,7 @@ const SunnahReading = () => {
       
       <main className="max-w-screen-md mx-auto space-y-8 py-4">
         <div className="px-6 flex items-center space-x-3">
-          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+          <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
             <BookOpen className="h-6 w-6 text-white" />
           </div>
           <div>
@@ -256,7 +257,7 @@ const SunnahReading = () => {
                 <Button 
                   onClick={handleRetry} 
                   variant="link" 
-                  className="text-app-green p-0 h-auto ml-2"
+                  className="text-teal-500 p-0 h-auto ml-2"
                 >
                   Retry
                 </Button>
@@ -277,13 +278,13 @@ const SunnahReading = () => {
             onClick={handleDebug}
             variant="outline"
             size="sm"
-            className="text-xs border-app-border"
+            className="text-xs border-slate-700"
           >
             Debug Collection Data
           </Button>
           
           {showDebug && debugData && (
-            <div className="mt-4 p-4 bg-gray-900 rounded text-xs overflow-auto max-h-[400px]">
+            <div className="mt-4 p-4 bg-slate-900 rounded text-xs overflow-auto max-h-[400px]">
               <h3 className="text-white font-medium mb-2">Collection URL:</h3>
               <p className="text-app-text-secondary break-all mb-4">{debugData.url}</p>
               
@@ -314,7 +315,7 @@ const SunnahReading = () => {
                 onClick={() => setShowDebug(false)}
                 variant="outline"
                 size="sm"
-                className="mt-4 text-xs border-app-border"
+                className="mt-4 text-xs border-slate-700"
               >
                 Close Debug Info
               </Button>

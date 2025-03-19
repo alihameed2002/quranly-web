@@ -15,15 +15,6 @@ import {
   COLLECTION_MAP,
   listCollections
 } from "@/utils/hadithDatabase";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { 
   Select,
   SelectContent,
@@ -39,15 +30,12 @@ interface HadithReaderProps {
   initialHadith?: string;
 }
 
-// Define Book interface to match the hadithDatabase utility
 interface Book {
   bookNumber: string;
   bookName: string;
   hadithCount: number;
 }
 
-// Add the hadith category mapping data
-// This is for Bukhari collection
 const BUKHARI_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "Revelation": { start: 1, end: 7, name: "Revelation (Kitab Al-Wahi)" },
   "Belief": { start: 8, end: 58, name: "Belief (Kitab Al-Iman)" },
@@ -145,7 +133,6 @@ const BUKHARI_CATEGORIES: { [key: string]: { start: number; end: number; name: s
   "Tawheed": { start: 7371, end: 7563, name: "Oneness of Allah (Tawheed) (Kitab At-Tawheed)" },
 };
 
-// Muslim collection categories
 const MUSLIM_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "Faith": { start: 1, end: 432, name: "Faith (Kitab Al-Iman)" },
   "Purification": { start: 433, end: 884, name: "Purification (Kitab Al-Taharah)" },
@@ -198,38 +185,32 @@ const MUSLIM_CATEGORIES: { [key: string]: { start: number; end: number; name: st
   "Exegesis": { start: 8627, end: 8736, name: "Exegesis of the Quran (Kitab Al-Tafsir)" }
 };
 
-// Categories for a sampling of other collections
 const ABUDAWUD_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "Purification": { start: 1, end: 390, name: "Purification (Kitab Al-Taharah)" },
   "Prayer": { start: 391, end: 1555, name: "Prayer (Kitab Al-Salat)" },
   "Zakat": { start: 1556, end: 1700, name: "Zakat (Kitab Al-Zakat)" },
-  // Add more for Abu Dawud
 };
 
 const TIRMIDHI_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "Purification": { start: 1, end: 147, name: "Purification (Kitab Al-Taharah)" },
   "Prayer": { start: 148, end: 452, name: "Prayer (Kitab Al-Salat)" },
-  // Add more for Tirmidhi
 };
 
 const NASAI_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "Purification": { start: 1, end: 308, name: "Purification (Kitab Al-Taharah)" },
   "Water": { start: 309, end: 327, name: "Water (Kitab Al-Miyah)" },
-  // Add more for Nasai
 };
 
 const NAWAWI40_CATEGORIES: { [key: string]: { start: number; end: number; name: string } } = {
   "FortyHadith": { start: 1, end: 42, name: "The Forty Hadith of Imam Nawawi" }
 };
 
-// Function to get the category of a hadith based on its number and collection
 const getHadithCategory = (hadithNumber: string, collection: string): string => {
   const num = parseInt(hadithNumber);
   if (isNaN(num)) return "Unknown";
   
   let categories: { [key: string]: { start: number; end: number; name: string } } = {};
   
-  // Select the appropriate category mapping based on collection
   switch (collection) {
     case "bukhari":
       categories = BUKHARI_CATEGORIES;
@@ -250,11 +231,9 @@ const getHadithCategory = (hadithNumber: string, collection: string): string => 
       categories = NAWAWI40_CATEGORIES;
       break;
     default:
-      // For collections without specific mappings, return a generic message
       return `${COLLECTION_MAP[collection] || collection} - Hadith ${hadithNumber}`;
   }
   
-  // Search for the category in the selected mapping
   for (const [key, category] of Object.entries(categories)) {
     if (num >= category.start && num <= category.end) {
       return category.name;
@@ -283,6 +262,7 @@ export default function HadithReader({
   const [isLastHadith, setIsLastHadith] = useState<boolean>(false);
   const [collections, setCollections] = useState<{id: string, name: string}[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
+  const [hadithsInBook, setHadithsInBook] = useState<string[]>([]);
   
   const { toast } = useToast();
   const location = useLocation();
@@ -293,7 +273,6 @@ export default function HadithReader({
   const searchResults = location.state?.results || [];
   const scrollPosition = location.state?.scrollPosition || 0;
   
-  // Load books for the selected collection
   useEffect(() => {
     const loadBooks = async () => {
       try {
@@ -307,6 +286,29 @@ export default function HadithReader({
     
     loadBooks();
   }, [currentCollection]);
+  
+  useEffect(() => {
+    const loadHadithsInBook = async () => {
+      try {
+        if (currentBook) {
+          const allHadiths = await getAllHadiths(currentCollection);
+          const filteredHadiths = allHadiths
+            .filter(h => h.bookNumber === currentBook)
+            .map(h => h.hadithNumber);
+          
+          const uniqueHadiths = [...new Set(filteredHadiths)].sort((a, b) => 
+            parseInt(a) - parseInt(b)
+          );
+          
+          setHadithsInBook(uniqueHadiths);
+        }
+      } catch (error) {
+        console.error("Failed to load hadiths in book:", error);
+      }
+    };
+    
+    loadHadithsInBook();
+  }, [currentCollection, currentBook]);
   
   useEffect(() => {
     const loadTotalCount = async () => {
@@ -333,9 +335,9 @@ export default function HadithReader({
           
           if (index !== -1) {
             setCurrentIndex(index);
-          setIsFirstHadith(index === 0);
-          setIsLastHadith(index === totalHadiths - 1);
-          console.log(`Current index: ${index}, isFirst: ${index === 0}, isLast: ${index === totalHadiths - 1}`);
+            setIsFirstHadith(index === 0);
+            setIsLastHadith(index === totalHadiths - 1);
+            console.log(`Current index: ${index}, isFirst: ${index === 0}, isLast: ${index === totalHadiths - 1}`);
           }
         } catch (error) {
           console.error("Error updating current index:", error);
@@ -360,8 +362,8 @@ export default function HadithReader({
         
         if (hadith) {
           console.log(`✅ Hadith loaded successfully:`, hadith);
-        setHadithData(hadith);
-        setPointsEarned(Math.floor(Math.random() * 5000) + 5000);
+          setHadithData(hadith);
+          setPointsEarned(Math.floor(Math.random() * 5000) + 5000);
         } else {
           console.error(`❌ Hadith not found for: collection=bukhari, book=${currentBook}, hadith=${currentHadith}`);
           throw new Error("Hadith not found");
@@ -385,7 +387,6 @@ export default function HadithReader({
   useEffect(() => {
     console.log(`Props updated: initialCollection=${initialCollection}, initialBook=${initialBook}, initialHadith=${initialHadith}`);
     
-    // Always use bukhari collection, but respect other props
     setCurrentCollection("bukhari");
     if (initialBook && initialHadith) {
       setCurrentBook(initialBook);
@@ -475,13 +476,20 @@ export default function HadithReader({
     }
   };
 
-  const handleDone = () => {
-    toast({
-      title: "Great job!",
-      description: `You've earned ${pointsEarned} points for this hadith.`,
-    });
+  const handleBookChange = (value: string) => {
+    setCurrentBook(value);
+    if (hadithsInBook.length > 0) {
+      navigate(`/sunnah/reading?collection=${currentCollection}&book=${value}&hadith=${hadithsInBook[0]}`, { replace: true });
+    } else {
+      navigate(`/sunnah/reading?collection=${currentCollection}&book=${value}&hadith=1`, { replace: true });
+    }
   };
   
+  const handleHadithChange = (value: string) => {
+    setCurrentHadith(value);
+    navigate(`/sunnah/reading?collection=${currentCollection}&book=${currentBook}&hadith=${value}`, { replace: true });
+  };
+
   const returnToSearchResults = () => {
     console.log("Returning to search results with:", {
       query: searchQuery,
@@ -499,86 +507,10 @@ export default function HadithReader({
     });
   };
   
-  const generatePaginationItems = () => {
-    if (totalHadiths <= 1) return null;
-    
-    const totalPages = Math.ceil(totalHadiths / 1);
-    const currentPage = currentIndex + 1;
-    
-    const pages = [];
-    
-    let startPage = Math.max(1, currentPage - 2);
-    let endPage = Math.min(totalPages, startPage + 4);
-    
-    if (endPage - startPage < 4) {
-      startPage = Math.max(1, endPage - 4);
-    }
-    
-    if (startPage > 1) {
-      pages.push(
-        <PaginationItem key="first">
-          <PaginationLink onClick={() => handleRandomHadith()}>1</PaginationLink>
-        </PaginationItem>
-      );
-      
-      if (startPage > 2) {
-        pages.push(
-          <PaginationItem key="ellipsis-start">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-    }
-    
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(
-        <PaginationItem key={i}>
-          <PaginationLink 
-            isActive={currentPage === i} 
-            onClick={() => handleRandomHadith()}
-          >
-            {i}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        pages.push(
-          <PaginationItem key="ellipsis-end">
-            <PaginationEllipsis />
-          </PaginationItem>
-        );
-      }
-      
-      pages.push(
-        <PaginationItem key="last">
-          <PaginationLink onClick={() => handleRandomHadith()}>
-            {totalPages}
-          </PaginationLink>
-        </PaginationItem>
-      );
-    }
-    
-    return pages;
-  };
-  
-  const handleCollectionChange = (value: string) => {
-    setCurrentCollection("bukhari");
-    setCurrentBook("1");
-    setCurrentHadith("1");
-    navigate(`/sunnah/reading?collection=bukhari&book=1&hadith=1`, { replace: true });
-  };
-  
-  const handleBookChange = (value: string) => {
-    navigate(`/sunnah/reading?collection=bukhari&book=${value}&hadith=1`, { replace: true });
-  };
-  
   if (isLoading) {
     return (
       <div className="glass-card rounded-lg p-6 animate-pulse-subtle">
-        <div className="h-10 w-10 border-4 border-app-green border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+        <div className="h-10 w-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
         <p className="text-center text-app-text-secondary">Loading hadith...</p>
       </div>
     );
@@ -601,7 +533,7 @@ export default function HadithReader({
               navigate('/sunnah/reading?collection=bukhari&book=1&hadith=1', { replace: true });
             }}
             variant="default"
-            className="bg-app-green hover:bg-app-green-light text-app-background-dark"
+            className="bg-teal-500 hover:bg-teal-600 text-app-background-dark"
           >
             Try Default Hadith
           </Button>
@@ -644,7 +576,7 @@ export default function HadithReader({
           <Button 
             variant="link" 
             onClick={returnToSearchResults}
-            className="text-app-green pl-0"
+            className="text-teal-500 pl-0"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back to search results for "{searchQuery}"
@@ -652,9 +584,39 @@ export default function HadithReader({
         </div>
       )}
       
-      <div className="px-6 mb-6">
-        <div className="h-14 px-6 py-4 bg-gradient-to-r from-app-card/80 via-app-card/60 to-app-card/80 border border-app-border rounded-md flex items-center justify-center text-lg font-medium text-white shadow-inner">
-          {hadithData ? getHadithCategory(hadithData.hadithNumber, "bukhari") : "Loading..."}
+      <div className="px-6 mb-4">
+        <div className="flex items-center justify-between gap-4">
+          <div className="h-14 px-6 py-4 bg-gradient-to-r from-slate-800/80 via-slate-800/60 to-slate-800/80 border border-slate-700 rounded-md flex items-center justify-center text-lg font-medium text-white shadow-inner flex-1">
+            {hadithData ? getHadithCategory(hadithData.hadithNumber, "bukhari") : "Loading..."}
+          </div>
+
+          <div className="flex gap-3">
+            <Select value={currentBook} onValueChange={handleBookChange}>
+              <SelectTrigger className="w-[120px] bg-slate-800 border-slate-700 text-white">
+                <SelectValue placeholder="Book" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-900 border-slate-700 text-white">
+                {books.map((book) => (
+                  <SelectItem key={book.bookNumber} value={book.bookNumber} className="hover:bg-slate-800">
+                    Book {book.bookNumber}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={currentHadith} onValueChange={handleHadithChange}>
+              <SelectTrigger className="w-[120px] bg-slate-800 border-slate-700 text-white">
+                <SelectValue placeholder="Hadith" />
+              </SelectTrigger>
+              <SelectContent className="max-h-[300px] bg-slate-900 border-slate-700 text-white">
+                {hadithsInBook.map((hadithNum) => (
+                  <SelectItem key={hadithNum} value={hadithNum} className="hover:bg-slate-800">
+                    Hadith {hadithNum}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       
@@ -684,50 +646,28 @@ export default function HadithReader({
           onClick={handlePreviousHadith}
           disabled={isFirstHadith || isLoading}
           variant="outline"
-          className="h-10 px-4 py-2 bg-app-card border-app-border hover:bg-app-card/80 hover:text-app-text transition-colors disabled:opacity-50"
+          className="h-10 px-5 py-2 bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-white transition-colors disabled:opacity-50 rounded-full"
         >
-          <ChevronsLeft className="h-5 w-5 mr-1" /> Previous
+          <ChevronLeft className="h-5 w-5 mr-1" /> Previous
         </Button>
         
         <Button
           onClick={handleRandomHadith}
           disabled={isLoading}
           variant="outline"
-          className="h-10 px-4 py-2 bg-app-card border-app-border hover:bg-app-card/80 hover:text-app-text transition-colors disabled:opacity-50"
+          className="h-10 px-5 py-2 bg-gradient-to-br from-teal-600 to-teal-700 border-teal-500 text-white hover:bg-teal-600 transition-colors disabled:opacity-50 rounded-full"
         >
-          <Shuffle className="h-5 w-5 mr-1" /> Random
+          <Shuffle className="h-4 w-4 mr-1" /> Random
         </Button>
         
         <Button
           onClick={handleNextHadith}
           disabled={isLastHadith || isLoading}
           variant="outline"
-          className="h-10 px-4 py-2 bg-app-card border-app-border hover:bg-app-card/80 hover:text-app-text transition-colors disabled:opacity-50"
+          className="h-10 px-5 py-2 bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-white transition-colors disabled:opacity-50 rounded-full"
         >
-          Next <ChevronsRight className="h-5 w-5 ml-1" />
+          Next <ChevronRight className="h-5 w-5 ml-1" />
         </Button>
-      </div>
-      
-      <div className="px-6 pb-4">
-        <Pagination>
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious 
-                onClick={isFirstHadith || isLoading ? undefined : handlePreviousHadith}
-                className={isFirstHadith || isLoading ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-            
-            {generatePaginationItems()}
-            
-            <PaginationItem>
-              <PaginationNext 
-                onClick={isLastHadith || isLoading ? undefined : handleNextHadith}
-                className={isLastHadith || isLoading ? "pointer-events-none opacity-50" : ""}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
       </div>
     </div>
   );

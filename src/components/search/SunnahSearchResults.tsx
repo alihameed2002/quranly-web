@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+
 import HadithCard from "@/components/HadithCard";
 import { Hadith } from "@/utils/hadithTypes";
 

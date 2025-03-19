@@ -63,12 +63,12 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// Custom app colors
+				// Custom app colors - Changed from purple to teal/slate
 				app: {
-					purple: {
-						light: '#9b87f5',
-						DEFAULT: '#6E3DD3',
-						dark: '#4D2997'
+					teal: {
+						light: '#4FD1C5',
+						DEFAULT: '#38B2AC',
+						dark: '#2C7A7B'
 					},
 					green: {
 						light: '#7EECD0',
@@ -76,14 +76,14 @@ export default {
 						dark: '#2EAF8B'
 					},
 					background: {
-						dark: '#1E0F3E',
-						DEFAULT: '#2A1654',
-						card: '#1A1133'
+						dark: '#0F172A',
+						DEFAULT: '#1E293B',
+						card: '#0F1629'
 					},
 					text: {
 						primary: '#FFFFFF',
-						secondary: '#E0D9F2',
-						muted: '#A99FC2'
+						secondary: '#E2E8F0',
+						muted: '#94A3B8'
 					}
 				}
 			},
