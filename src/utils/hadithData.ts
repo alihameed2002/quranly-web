@@ -105,9 +105,9 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
     return {
       id: 0,
       collection: currentActiveCollection,
-      bookNumber: 1,
-      chapterNumber: 1,
-      hadithNumber: 1,
+      bookNumber: "1",
+      chapterNumber: "1",
+      hadithNumber: "1",
       arabic: 'Error loading hadith',
       english: 'There was an error loading this hadith. Please try again later.',
       reference: `${currentActiveCollection} 1:1`,
@@ -118,7 +118,7 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
 };
 
 // Get all hadith chapters/books
-export const getHadithChapters = async (collectionId: string = currentActiveCollection): Promise<{id: number, name: string, hadithCount: number}[]> => {
+export const getHadithChapters = async (collectionId: string = currentActiveCollection): Promise<{id: string, name: string, hadithCount: number}[]> => {
   try {
     // Always fetch fresh book data from API
     const books = await fetchBooks(collectionId);
@@ -128,7 +128,7 @@ export const getHadithChapters = async (collectionId: string = currentActiveColl
     
     // If we have cached hadiths, we can try to extract books from there
     if (cachedHadiths.length > 0) {
-      const bookMap = new Map<number, number>();
+      const bookMap = new Map<string, number>();
       
       cachedHadiths.forEach(hadith => {
         if (!bookMap.has(hadith.bookNumber)) {
@@ -142,7 +142,7 @@ export const getHadithChapters = async (collectionId: string = currentActiveColl
         id: bookNumber,
         name: `Book ${bookNumber}`,
         hadithCount: count
-      })).sort((a, b) => a.id - b.id);
+      })).sort((a, b) => parseInt(a.id) - parseInt(b.id));
     }
     
     return [];
@@ -151,7 +151,7 @@ export const getHadithChapters = async (collectionId: string = currentActiveColl
 
 // Get hadiths for a specific chapter/book
 export const getHadithsByChapter = async (
-  bookNumber: number, 
+  bookNumber: string, 
   collectionId: string = currentActiveCollection
 ): Promise<Hadith[]> => {
   try {
@@ -172,22 +172,22 @@ export const getHadithsByChapter = async (
       });
     }
     
-    return hadiths.sort((a, b) => a.hadithNumber - b.hadithNumber);
+    return hadiths.sort((a, b) => parseInt(a.hadithNumber) - parseInt(b.hadithNumber));
   } catch (error) {
     console.error(`Failed to get hadiths for book ${bookNumber}:`, error);
     
     // Fallback to cached hadiths if available
     return cachedHadiths
       .filter(h => h.bookNumber === bookNumber)
-      .sort((a, b) => a.hadithNumber - b.hadithNumber);
+      .sort((a, b) => parseInt(a.hadithNumber) - parseInt(b.hadithNumber));
   }
 };
 
 // Get a specific hadith
 export const fetchHadith = async (
   collection: string = currentActiveCollection, 
-  bookNumber: number, 
-  hadithNumber: number
+  bookNumber: string, 
+  hadithNumber: string
 ): Promise<Hadith> => {
   try {
     // First check if it's in the cache
@@ -239,8 +239,8 @@ export const fetchHadith = async (
 // Get hadith index from collection, book, and hadith number
 export const getHadithIndex = async (
   collection: string = currentActiveCollection, 
-  bookNumber: number, 
-  hadithNumber: number
+  bookNumber: string, 
+  hadithNumber: string
 ): Promise<number> => {
   try {
     await loadHadithData();
@@ -262,7 +262,7 @@ export const getHadithIndex = async (
 export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
   // First try to get the next hadith by querying the API for the next hadith number in the same book
   try {
-    const nextHadithNumber = current.hadithNumber + 1;
+    const nextHadithNumber = (parseInt(current.hadithNumber) + 1).toString();
     return await fetchHadith(current.collection, current.bookNumber, nextHadithNumber);
   } catch (error) {
     console.log("Could not get next hadith directly, trying next book...");
@@ -274,7 +274,7 @@ export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
       
       if (currentBookIndex >= 0 && currentBookIndex < books.length - 1) {
         const nextBook = books[currentBookIndex + 1];
-        return await fetchHadith(current.collection, nextBook.id, 1);
+        return await fetchHadith(current.collection, nextBook.id, "1");
       }
     } catch (innerError) {
       console.error("Failed to get next book hadith:", innerError);
@@ -299,8 +299,8 @@ export const getNextHadith = async (current: Hadith): Promise<Hadith> => {
 export const getPreviousHadith = async (current: Hadith): Promise<Hadith> => {
   // First try to get the previous hadith by querying the API for the previous hadith number in the same book
   try {
-    if (current.hadithNumber > 1) {
-      const prevHadithNumber = current.hadithNumber - 1;
+    if (parseInt(current.hadithNumber) > 1) {
+      const prevHadithNumber = (parseInt(current.hadithNumber) - 1).toString();
       return await fetchHadith(current.collection, current.bookNumber, prevHadithNumber);
     } else {
       throw new Error("At first hadith in book");
@@ -381,9 +381,9 @@ export const getRandomHadith = async (): Promise<Hadith> => {
     return {
       id: 0,
       collection: currentActiveCollection,
-      bookNumber: 1,
-      chapterNumber: 1,
-      hadithNumber: 1,
+      bookNumber: "1",
+      chapterNumber: "1",
+      hadithNumber: "1",
       arabic: 'عَنْ عُمَرَ بْنِ الْخَطَّابِ رَضِيَ اللَّهُ عَنْهُ قَالَ سَمِعْتُ رَسُولَ اللَّهِ صَلَّى اللَّهُ عَلَيْهِ وَسَلَّمَ يَقُولُ إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ',
       english: 'Actions are judged by intentions.',
       reference: `${currentActiveCollection} 1:1`,

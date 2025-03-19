@@ -642,14 +642,17 @@ export default function HadithReader({
       )}
       
       <div className="flex justify-between items-center px-6">
-        <Button
+        <button 
           onClick={handlePreviousHadith}
           disabled={isFirstHadith || isLoading}
-          variant="outline"
-          className="h-10 px-5 py-2 bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-white transition-colors disabled:opacity-50 rounded-full"
+          className={cn(
+            "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
+            !isLoading && !isFirstHadith ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
+          )}
         >
-          <ChevronLeft className="h-5 w-5 mr-1" /> Previous
-        </Button>
+          <ChevronLeft className="h-6 w-6 text-white mr-2" />
+          <span className="text-white font-medium">Previous</span>
+        </button>
         
         <Button
           onClick={handleRandomHadith}
@@ -660,14 +663,17 @@ export default function HadithReader({
           <Shuffle className="h-4 w-4 mr-1" /> Random
         </Button>
         
-        <Button
+        <button 
           onClick={handleNextHadith}
           disabled={isLastHadith || isLoading}
-          variant="outline"
-          className="h-10 px-5 py-2 bg-gradient-to-br from-slate-800 to-slate-700 border-slate-600 hover:bg-slate-700 hover:border-slate-500 text-white transition-colors disabled:opacity-50 rounded-full"
+          className={cn(
+            "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
+            !isLoading && !isLastHadith ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
+          )}
         >
-          Next <ChevronRight className="h-5 w-5 ml-1" />
-        </Button>
+          <span className="text-white font-medium">Next</span>
+          <ChevronRight className="h-6 w-6 text-white ml-2" />
+        </button>
       </div>
     </div>
   );
