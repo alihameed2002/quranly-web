@@ -1,4 +1,3 @@
-
 import { ArrowLeft, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -6,7 +5,6 @@ import { cn } from "@/lib/utils";
 interface HeaderProps {
   showBack?: boolean;
   className?: string;
-  totalPoints?: number;
   totalVerses?: number;
   timeSpent?: string;
 }
@@ -14,7 +12,6 @@ interface HeaderProps {
 export default function Header({ 
   showBack = true, 
   className,
-  totalPoints,
   totalVerses,
   timeSpent
 }: HeaderProps) {
@@ -31,7 +28,10 @@ export default function Header({
         <div className="w-12"></div> 
       )}
       
-      <h1 className="text-xl font-medium text-white">Quran App</h1>
+      <div className="flex items-center space-x-2">
+        <img src="/images/rushd-logo.png" alt="Rushd Logo" className="h-8 w-auto" />
+        <h1 className="text-xl font-medium text-white">Rushd</h1>
+      </div>
       
       <Link 
         to="/settings" 
