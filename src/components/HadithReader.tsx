@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight, Shuffle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, ChevronsLeft, ChevronsRight, Shuffle, ChevronDown, X, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import HadithCard from "./HadithCard";
 import { useState, useEffect } from "react";
@@ -13,15 +13,22 @@ import {
   getTotalHadithCount,
   getHadithByIndex,
   COLLECTION_MAP,
-  listCollections
+  listCollections,
+  BUKHARI_BOOK_STRUCTURE,
+  getBookFromHadithNumber
 } from "@/utils/hadithDatabase";
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 interface HadithReaderProps {
   className?: string;
@@ -243,6 +250,81 @@ const getHadithCategory = (hadithNumber: string, collection: string): string => 
   return `${COLLECTION_MAP[collection] || collection} - Hadith ${hadithNumber}`;
 };
 
+// Helper functions for the hadith browser UI
+interface CategoryGroup {
+  [group: string]: [string, { start: number; end: number; name: string }][];
+}
+
+// Using BUKHARI_BOOK_STRUCTURE imported from hadithDatabase instead of defining BOOK_HADITH_RANGES here
+
+const groupCategories = (categories: { [key: string]: { start: number; end: number; name: string } }): CategoryGroup => {
+  const groups: CategoryGroup = {
+    "Belief & Knowledge": [],
+    "Prayer & Worship": [],
+    "Fasting & Pilgrimage": [],
+    "Transactions & Business": [],
+    "Marriage & Family": [],
+    "Ethics & Manners": [],
+    "Jihad & Leadership": [],
+    "Medicine & Dreams": [],
+    "Quran & Sunnah": []
+  };
+  
+  Object.entries(categories).forEach(([key, category]) => {
+    // Assign categories to groups based on their themes
+    if (["Revelation", "Belief", "Knowledge", "Tawheed", "HoldingFast", "AcceptingInfo"].includes(key)) {
+      groups["Belief & Knowledge"].push([key, category]);
+    } else if (["Ablutions", "Bathing", "MenstrualPeriods", "Tayammum", "Prayers", "PrayerTimes", "Adhan", "FridayPrayer", "FearPrayer", "Eids", "WitrPrayer", "Istisqa", "Eclipses", "Prostration", "ShorteningPrayers", "NightPrayers", "PrayerVirtues", "PrayerActions", "Forgetfulness", "Funerals"].includes(key)) {
+      groups["Prayer & Worship"].push([key, category]);
+    } else if (["Zakat", "Fasting", "Taraweeh", "NightOfQadr", "Itikaf", "Hajj", "Umrah", "PreventedPilgrims", "HuntingPenalty", "MadinahVirtues"].includes(key)) {
+      groups["Fasting & Pilgrimage"].push([key, category]);
+    } else if (["Sales", "Salam", "Preemption", "Hiring", "DebtTransfer", "Agency", "Agriculture", "Watering", "Loans", "LostThings", "Oppressions", "Partnership", "Pledging"].includes(key)) {
+      groups["Transactions & Business"].push([key, category]);
+    } else if (["Manumission", "Gifts", "Witnesses", "Peacemaking", "Conditions", "Wills", "Marriage", "Divorce", "FamilySupport", "Inheritance"].includes(key)) {
+      groups["Marriage & Family"].push([key, category]);
+    } else if (["Food", "Aqiqa", "SlaughteringHunting", "Sacrifices", "Drinks", "Dress", "GoodManners", "AskingPermission", "Invocations", "SofteningHearts", "DivineWill", "OathsVows", "Expiation"].includes(key)) {
+      groups["Ethics & Manners"].push([key, category]);
+    } else if (["Jihad", "Khums", "Jizyah", "ProphetVirtues", "Companions", "SunnahMerits", "MilitaryExpeditions", "Hudood", "BloodMoney", "Apostates", "Coercion", "Tricks"].includes(key)) {
+      groups["Jihad & Leadership"].push([key, category]);
+    } else if (["Patients", "Medicine", "Dreams", "Afflictions", "Judgments", "Wishes"].includes(key)) {
+      groups["Medicine & Dreams"].push([key, category]);
+    } else if (["Creation", "Prophets", "QuranCommentary", "QuranVirtues"].includes(key)) {
+      groups["Quran & Sunnah"].push([key, category]);
+    } else {
+      // Add any unmatched categories to Quran & Sunnah as a fallback
+      groups["Quran & Sunnah"].push([key, category]);
+    }
+  });
+  
+  // Filter out empty groups
+  const filteredGroups: CategoryGroup = {};
+  Object.entries(groups).forEach(([group, categories]) => {
+    if (categories.length > 0) {
+      filteredGroups[group] = categories;
+    }
+  });
+  
+  return filteredGroups;
+};
+
+const getBookNumberFromHadith = (hadithNum: string): string => {
+  const num = parseInt(hadithNum);
+  if (isNaN(num)) return "1";
+  
+  // Use the function from hadithDatabase
+  return getBookFromHadithNumber(num);
+};
+
+const getFirstHadithInBook = (bookNum: string): string => {
+  const range = BUKHARI_BOOK_STRUCTURE[bookNum];
+  return range ? range.start.toString() : "1";
+};
+
+// Update the drawer header to show proper book count
+const TOTAL_BOOKS = Object.keys(BUKHARI_BOOK_STRUCTURE).length;
+// Calculate total hadiths by finding the highest end number in the structure
+const TOTAL_HADITHS = Math.max(...Object.values(BUKHARI_BOOK_STRUCTURE).map(book => book.end));
+
 export default function HadithReader({
   className,
   initialCollection = "bukhari",
@@ -254,7 +336,6 @@ export default function HadithReader({
   const [currentHadith, setCurrentHadith] = useState<string>(initialHadith);
   const [hadithData, setHadithData] = useState<Hadith | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [pointsEarned, setPointsEarned] = useState<number>(7600);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [totalHadiths, setTotalHadiths] = useState<number>(0);
@@ -263,6 +344,12 @@ export default function HadithReader({
   const [collections, setCollections] = useState<{id: string, name: string}[]>([]);
   const [books, setBooks] = useState<Book[]>([]);
   const [hadithsInBook, setHadithsInBook] = useState<string[]>([]);
+  const [selectedBookForSubmenu, setSelectedBookForSubmenu] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<{ key: string, category: { start: number; end: number; name: string } } | null>(null);
+  const [hadithFilter, setHadithFilter] = useState<string>("");
+  const [hadithSubRanges, setHadithSubRanges] = useState<number[][]>([]);
+  const [activeSubRange, setActiveSubRange] = useState<number>(0);
+  const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   
   const { toast } = useToast();
   const location = useLocation();
@@ -355,17 +442,50 @@ export default function HadithReader({
       setIsLoading(true);
       setError(null);
       
-      console.log(`⏳ Loading hadith data: collection=bukhari, book=${currentBook}, hadith=${currentHadith}`);
+      console.log(`⏳ Loading hadith data: collection=${currentCollection}, book=${currentBook}, hadith=${currentHadith}`);
+      console.log(`Book Structure for debugging:`, BUKHARI_BOOK_STRUCTURE);
       
       try {
-        const hadith = await getHadith("bukhari", currentBook, currentHadith);
+        // Verify if the current book and hadith combination exists in the structure
+        const bookRange = BUKHARI_BOOK_STRUCTURE[currentBook];
+        console.log(`Checking book range for book ${currentBook}:`, bookRange);
+        
+        if (bookRange) {
+          const hadithNum = parseInt(currentHadith);
+          console.log(`Checking if hadith ${hadithNum} is in range ${bookRange.start}-${bookRange.end}`);
+          const isInRange = hadithNum >= bookRange.start && hadithNum <= bookRange.end;
+          console.log(`Hadith ${hadithNum} is ${isInRange ? 'in' : 'NOT in'} range`);
+          
+          // If not in range, find the correct book and update
+          if (!isInRange) {
+            const correctBookNum = getBookFromHadithNumber(hadithNum);
+            console.log(`Hadith ${hadithNum} should be in book ${correctBookNum}`);
+            
+            if (correctBookNum !== currentBook) {
+              console.log(`Updating book from ${currentBook} to ${correctBookNum}`);
+              setCurrentBook(correctBookNum);
+              // Update URL to reflect correct book/hadith combination
+              navigate(`/sunnah/reading?collection=${currentCollection}&book=${correctBookNum}&hadith=${currentHadith}`, { replace: true });
+            }
+          }
+        }
+        
+        const hadith = await getHadith(currentCollection, currentBook, currentHadith);
         
         if (hadith) {
           console.log(`✅ Hadith loaded successfully:`, hadith);
+          
+          // If the hadith was found but in a different book, update the state to match
+          if (hadith.bookNumber !== currentBook) {
+            console.log(`Book number mismatch - URL shows book ${currentBook} but hadith is in book ${hadith.bookNumber}`);
+            setCurrentBook(hadith.bookNumber);
+            // Update URL to reflect correct book/hadith combination
+            navigate(`/sunnah/reading?collection=${currentCollection}&book=${hadith.bookNumber}&hadith=${currentHadith}`, { replace: true });
+          }
+          
           setHadithData(hadith);
-          setPointsEarned(Math.floor(Math.random() * 5000) + 5000);
         } else {
-          console.error(`❌ Hadith not found for: collection=bukhari, book=${currentBook}, hadith=${currentHadith}`);
+          console.error(`❌ Hadith not found for: collection=${currentCollection}, book=${currentBook}, hadith=${currentHadith}`);
           throw new Error("Hadith not found");
         }
       } catch (error) {
@@ -382,17 +502,62 @@ export default function HadithReader({
     };
     
     loadHadithData();
-  }, [currentBook, currentHadith, toast]);
+  }, [currentBook, currentHadith, toast, navigate]);
+  
+  useEffect(() => {
+    const loadCollectionsList = async () => {
+      try {
+        const collectionsList = await listCollections();
+        setCollections(collectionsList);
+      } catch (error) {
+        console.error("Failed to load collections list:", error);
+      }
+    };
+    
+    loadCollectionsList();
+  }, []);
   
   useEffect(() => {
     console.log(`Props updated: initialCollection=${initialCollection}, initialBook=${initialBook}, initialHadith=${initialHadith}`);
     
-    setCurrentCollection("bukhari");
+    setCurrentCollection(initialCollection);
     if (initialBook && initialHadith) {
       setCurrentBook(initialBook);
       setCurrentHadith(initialHadith);
     }
   }, [initialCollection, initialBook, initialHadith]);
+  
+  useEffect(() => {
+    let hadiths: string[] = [];
+    
+    if (selectedBookForSubmenu) {
+      hadiths = getFilteredHadithsForBook(selectedBookForSubmenu);
+    } else if (selectedCategory) {
+      hadiths = getFilteredHadithsForCategory();
+    } else {
+      return;
+    }
+    
+    // Create sub-ranges for pagination if there are more than 50 hadiths
+    if (hadiths.length > 50) {
+      const ranges: number[][] = [];
+      const rangeSize = 50;
+      
+      for (let i = 0; i < hadiths.length; i += rangeSize) {
+        const start = parseInt(hadiths[i]);
+        const end = i + rangeSize < hadiths.length 
+          ? parseInt(hadiths[i + rangeSize - 1]) 
+          : parseInt(hadiths[hadiths.length - 1]);
+        
+        ranges.push([start, end]);
+      }
+      
+      setHadithSubRanges(ranges);
+      setActiveSubRange(0);
+    } else {
+      setHadithSubRanges([]);
+    }
+  }, [selectedBookForSubmenu, selectedCategory, hadithFilter]);
   
   const handleNextHadith = async () => {
     if (isLoading || !hadithData || isLastHadith) return;
@@ -411,7 +576,7 @@ export default function HadithReader({
       if (nextHadith) {
         setCurrentHadith(nextHadith.hadithNumber);
         setCurrentBook(nextHadith.bookNumber);
-        navigate(`/sunnah/reading?collection=bukhari&book=${nextHadith.bookNumber}&hadith=${nextHadith.hadithNumber}`, { replace: true });
+        navigate(`/sunnah/reading?collection=${currentCollection}&book=${nextHadith.bookNumber}&hadith=${nextHadith.hadithNumber}`, { replace: true });
       }
     } catch (error) {
       console.error("Error getting next hadith:", error);
@@ -441,7 +606,7 @@ export default function HadithReader({
       if (prevHadith) {
         setCurrentHadith(prevHadith.hadithNumber);
         setCurrentBook(prevHadith.bookNumber);
-        navigate(`/sunnah/reading?collection=bukhari&book=${prevHadith.bookNumber}&hadith=${prevHadith.hadithNumber}`, { replace: true });
+        navigate(`/sunnah/reading?collection=${currentCollection}&book=${prevHadith.bookNumber}&hadith=${prevHadith.hadithNumber}`, { replace: true });
       }
     } catch (error) {
       console.error("Error getting previous hadith:", error);
@@ -464,7 +629,7 @@ export default function HadithReader({
       if (randomHadith) {
         setCurrentHadith(randomHadith.hadithNumber);
         setCurrentBook(randomHadith.bookNumber);
-        navigate(`/sunnah/reading?collection=bukhari&book=${randomHadith.bookNumber}&hadith=${randomHadith.hadithNumber}`, { replace: true });
+        navigate(`/sunnah/reading?collection=${currentCollection}&book=${randomHadith.bookNumber}&hadith=${randomHadith.hadithNumber}`, { replace: true });
       }
     } catch (error) {
       console.error("Error getting random hadith:", error);
@@ -507,6 +672,55 @@ export default function HadithReader({
     });
   };
   
+  const getCurrentBookName = (bookNum: string) => {
+    const range = BUKHARI_BOOK_STRUCTURE[bookNum];
+    return range?.name || `Book ${bookNum}`;
+  };
+  
+  // Function to generate array of hadith numbers for a book
+  const getHadithsForBook = (bookNum: string): string[] => {
+    const range = BUKHARI_BOOK_STRUCTURE[bookNum];
+    if (!range) return [];
+    
+    const hadiths: string[] = [];
+    for (let i = range.start; i <= range.end; i++) {
+      hadiths.push(i.toString());
+    }
+    return hadiths;
+  };
+  
+  // Function to filter hadiths by search term
+  const getFilteredHadithsForBook = (bookNum: string): string[] => {
+    const allHadiths = getHadithsForBook(bookNum);
+    if (!hadithFilter) return allHadiths;
+    
+    return allHadiths.filter(hadith => 
+      hadith.includes(hadithFilter)
+    );
+  };
+  
+  // Function to generate array of hadith numbers for a category range
+  const getHadithsForCategory = (category: { start: number; end: number }): string[] => {
+    if (!category) return [];
+    
+    const hadiths: string[] = [];
+    for (let i = category.start; i <= category.end; i++) {
+      hadiths.push(i.toString());
+    }
+    return hadiths;
+  };
+  
+  // Function to filter hadiths by search term
+  const getFilteredHadithsForCategory = (): string[] => {
+    if (!selectedCategory) return [];
+    const allHadiths = getHadithsForCategory(selectedCategory.category);
+    if (!hadithFilter) return allHadiths;
+    
+    return allHadiths.filter(hadith => 
+      hadith.includes(hadithFilter)
+    );
+  };
+  
   if (isLoading) {
     return (
       <div className="glass-card rounded-lg p-6 animate-pulse-subtle">
@@ -527,10 +741,9 @@ export default function HadithReader({
           <Button 
             onClick={() => {
               setError(null);
-              setCurrentCollection("bukhari");
               setCurrentBook("1");
               setCurrentHadith("1");
-              navigate('/sunnah/reading?collection=bukhari&book=1&hadith=1', { replace: true });
+              navigate(`/sunnah/reading?collection=${currentCollection}&book=1&hadith=1`, { replace: true });
             }}
             variant="default"
             className="bg-teal-500 hover:bg-teal-600 text-app-background-dark"
@@ -572,11 +785,11 @@ export default function HadithReader({
   return (
     <div className={cn("space-y-8", className)}>
       {fromSearch && (
-        <div className="mb-4 flex items-center">
+        <div className="px-6 mb-4">
           <Button 
             variant="link" 
+            className="flex items-center justify-center text-teal-500 p-0 h-auto font-normal"
             onClick={returnToSearchResults}
-            className="text-teal-500 pl-0"
           >
             <ChevronLeft className="w-4 h-4 mr-1" />
             Back to search results for "{searchQuery}"
@@ -590,33 +803,284 @@ export default function HadithReader({
             {hadithData ? getHadithCategory(hadithData.hadithNumber, "bukhari") : "Loading..."}
           </div>
 
-          <div className="flex gap-3">
-            <Select value={currentBook} onValueChange={handleBookChange}>
-              <SelectTrigger className="w-[120px] bg-slate-800 border-slate-700 text-white">
-                <SelectValue placeholder="Book" />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-900 border-slate-700 text-white">
-                {books.map((book) => (
-                  <SelectItem key={book.bookNumber} value={book.bookNumber} className="hover:bg-slate-800">
-                    Book {book.bookNumber}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={currentHadith} onValueChange={handleHadithChange}>
-              <SelectTrigger className="w-[120px] bg-slate-800 border-slate-700 text-white">
-                <SelectValue placeholder="Hadith" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px] bg-slate-900 border-slate-700 text-white">
-                {hadithsInBook.map((hadithNum) => (
-                  <SelectItem key={hadithNum} value={hadithNum} className="hover:bg-slate-800">
-                    Hadith {hadithNum}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <DrawerTrigger asChild>
+              <Button variant="outline" className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 hover:text-white" onClick={() => setDrawerOpen(true)}>
+                <BookOpen className="h-4 w-4 mr-2" />
+                Browse
+              </Button>
+            </DrawerTrigger>
+            <DrawerContent className="bg-app-background border-t border-slate-700">
+              <div className="mx-auto w-full max-w-4xl">
+                <DrawerHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <DrawerTitle className="text-white">
+                        {selectedCategory 
+                          ? selectedCategory.category.name 
+                          : selectedBookForSubmenu 
+                            ? `Book ${selectedBookForSubmenu}: ${getCurrentBookName(selectedBookForSubmenu)}`
+                            : "Browse Sahih Bukhari"}
+                      </DrawerTitle>
+                      <DrawerDescription className="text-app-text-secondary">
+                        {selectedCategory 
+                          ? `Hadiths ${selectedCategory.category.start} - ${selectedCategory.category.end}` 
+                          : selectedBookForSubmenu
+                            ? `Hadiths ${BUKHARI_BOOK_STRUCTURE[selectedBookForSubmenu]?.start} - ${BUKHARI_BOOK_STRUCTURE[selectedBookForSubmenu]?.end}`
+                            : `${TOTAL_HADITHS} authentic hadiths across ${TOTAL_BOOKS} books`}
+                      </DrawerDescription>
+                    </div>
+                    <DrawerClose asChild>
+                      <Button variant="ghost" size="icon" className="text-white hover:bg-slate-800 hover:text-white">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </DrawerClose>
+                  </div>
+                </DrawerHeader>
+                
+                <div className="px-4 py-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input 
+                      placeholder={
+                        selectedCategory || selectedBookForSubmenu 
+                          ? "Filter hadith numbers..." 
+                          : "Search by book name or number..."
+                      }
+                      className="bg-slate-800 border-slate-700 text-white pl-10 transition-all duration-300"
+                      value={hadithFilter}
+                      onChange={(e) => setHadithFilter(e.target.value)}
+                    />
+                    {hadithFilter && (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 text-slate-400 hover:text-white" 
+                        onClick={() => setHadithFilter("")}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="h-[60vh] px-4 overflow-hidden">
+                  {selectedCategory ? (
+                    <div className="animate-in fade-in slide-in-from-right duration-300 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Button 
+                          variant="ghost" 
+                          className="text-white hover:bg-slate-800 px-2 flex items-center"
+                          onClick={() => {
+                            setSelectedCategory(null);
+                            setHadithFilter("");
+                          }}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Back to Categories
+                        </Button>
+                      </div>
+                      
+                      <ScrollArea className="h-[50vh] pr-2">
+                        <div className="grid grid-cols-5 gap-2">
+                          {getFilteredHadithsForCategory()
+                            .filter(hadithNum => {
+                              if (hadithSubRanges.length > 0) {
+                                const num = parseInt(hadithNum);
+                                const [start, end] = hadithSubRanges[activeSubRange];
+                                return num >= start && num <= end;
+                              }
+                              return true;
+                            })
+                            .map(hadithNum => (
+                              <Button
+                                key={hadithNum}
+                                variant={hadithNum === currentHadith ? "default" : "outline"}
+                                className={`
+                                  ${hadithNum === currentHadith 
+                                    ? "bg-teal-500 hover:bg-teal-600 text-slate-900" 
+                                    : "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"}
+                                  transition-all duration-200 hover:scale-105
+                                `}
+                                onClick={() => {
+                                  const bookNum = getBookFromHadithNumber(parseInt(hadithNum));
+                                  setCurrentHadith(hadithNum);
+                                  setCurrentBook(bookNum);
+                                  setDrawerOpen(false);
+                                  navigate(`/sunnah/reading?collection=${currentCollection}&book=${bookNum}&hadith=${hadithNum}`, { replace: true });
+                                }}
+                              >
+                                {hadithNum}
+                              </Button>
+                            ))}
+                        </div>
+                        
+                        {getFilteredHadithsForCategory().length === 0 && (
+                          <div className="py-8 text-center text-app-text-secondary">
+                            No hadiths match your filter
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  ) : selectedBookForSubmenu ? (
+                    <div className="animate-in fade-in slide-in-from-right duration-300 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <Button 
+                          variant="ghost" 
+                          className="text-white hover:bg-slate-800 px-2 flex items-center"
+                          onClick={() => {
+                            setSelectedBookForSubmenu(null);
+                            setHadithFilter("");
+                          }}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Back to Books
+                        </Button>
+                      </div>
+                      
+                      <ScrollArea className="h-[50vh] pr-2">
+                        <div className="grid grid-cols-5 gap-2">
+                          {getFilteredHadithsForBook(selectedBookForSubmenu)
+                            .map(hadithNum => (
+                              <Button
+                                key={hadithNum}
+                                variant={hadithNum === currentHadith ? "default" : "outline"}
+                                className={`
+                                  ${hadithNum === currentHadith 
+                                    ? "bg-teal-500 hover:bg-teal-600 text-slate-900" 
+                                    : "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"}
+                                  transition-all duration-200 hover:scale-105
+                                `}
+                                onClick={() => {
+                                  setCurrentHadith(hadithNum);
+                                  setCurrentBook(selectedBookForSubmenu);
+                                  setDrawerOpen(false);
+                                  navigate(`/sunnah/reading?collection=${currentCollection}&book=${selectedBookForSubmenu}&hadith=${hadithNum}`, { replace: true });
+                                }}
+                              >
+                                {hadithNum}
+                              </Button>
+                            ))}
           </div>
+                        
+                        {getFilteredHadithsForBook(selectedBookForSubmenu).length === 0 && (
+                          <div className="py-8 text-center text-app-text-secondary">
+                            No hadiths match your filter
+        </div>
+                        )}
+                      </ScrollArea>
+                    </div>
+                  ) : (
+                    <div className="animate-in fade-in slide-in-from-left duration-300 py-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="space-y-3">
+                          <h3 className="text-white font-medium px-1">Books</h3>
+                          <ScrollArea className="h-[48vh] pr-2">
+                            <div className="space-y-2">
+                              {Object.entries(BUKHARI_BOOK_STRUCTURE)
+                                .filter(([bookId, book]) => 
+                                  !hadithFilter || 
+                                  bookId.includes(hadithFilter) || 
+                                  book.name.toLowerCase().includes(hadithFilter.toLowerCase())
+                                )
+                                .map(([bookId, book]) => (
+                                  <Button
+                                    key={bookId}
+                                    variant={currentBook === bookId ? "default" : "outline"}
+                                    className={`
+                                      ${currentBook === bookId
+                                        ? "bg-teal-500 hover:bg-teal-600 text-slate-900" 
+                                        : "bg-slate-800 border-slate-700 text-white hover:bg-slate-700"}
+                                      justify-between h-auto py-3 w-full text-left flex-col items-start px-4
+                                      transition-all duration-200 hover:scale-[1.02] hover:shadow-lg
+                                    `}
+                                    onClick={() => {
+                                      setSelectedBookForSubmenu(bookId);
+                                      setHadithFilter("");
+                                    }}
+                                  >
+                                    <div className="flex w-full justify-between items-center">
+                                      <span className="font-medium">Book {bookId}</span>
+                                      <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full">
+                                        {book.end - book.start + 1} hadiths
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-slate-400 text-left mt-1 truncate w-full">
+                                      {book.name}
+                                    </div>
+                                  </Button>
+                                ))}
+                              
+                              {Object.entries(BUKHARI_BOOK_STRUCTURE).filter(([bookId, book]) => 
+                                !hadithFilter || 
+                                bookId.includes(hadithFilter) || 
+                                book.name.toLowerCase().includes(hadithFilter.toLowerCase())
+                              ).length === 0 && (
+                                <div className="py-8 text-center text-app-text-secondary">
+                                  No books match your filter
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <h3 className="text-white font-medium px-1">Categories</h3>
+                          <ScrollArea className="h-[48vh] pr-2">
+                            <div className="space-y-2">
+                              {Object.entries(BUKHARI_CATEGORIES)
+                                .filter(([key, category]) => 
+                                  !hadithFilter || 
+                                  category.name.toLowerCase().includes(hadithFilter.toLowerCase())
+                                )
+                                .map(([key, category]) => (
+                                  <Button
+                                    key={key}
+                                    variant="outline"
+                                    className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700
+                                      justify-between h-auto py-3 w-full text-left flex-col items-start px-4
+                                      transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+                                    onClick={() => {
+                                      setSelectedCategory({ key, category });
+                                      setHadithFilter("");
+                                    }}
+                                  >
+                                    <div className="flex w-full justify-between items-center">
+                                      <span className="font-medium">{category.name}</span>
+                                      <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full">
+                                        {category.end - category.start + 1} hadiths
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-slate-400 text-left mt-1">
+                                      Hadiths {category.start}-{category.end}
+                                    </div>
+                                  </Button>
+                                ))}
+                              
+                              {Object.entries(BUKHARI_CATEGORIES).filter(([key, category]) => 
+                                !hadithFilter || 
+                                category.name.toLowerCase().includes(hadithFilter.toLowerCase())
+                              ).length === 0 && (
+                                <div className="py-8 text-center text-app-text-secondary">
+                                  No categories match your filter
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <DrawerFooter>
+                  <DrawerClose asChild>
+                    <Button className="bg-teal-500 hover:bg-teal-600 text-slate-900 transition-all duration-200 hover:scale-[1.02]">Close</Button>
+                  </DrawerClose>
+                </DrawerFooter>
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
       </div>
       
@@ -641,39 +1105,76 @@ export default function HadithReader({
         </div>
       )}
       
-      <div className="flex justify-between items-center px-6">
-        <button 
+      <div className="flex flex-col space-y-4 px-6 mt-6">
+        <div className="grid grid-cols-5 gap-2">
+          <Button 
+            onClick={() => {
+              handlePreviousHadith();
+              handlePreviousHadith();
+              handlePreviousHadith();
+              handlePreviousHadith();
+              handlePreviousHadith();
+            }}
+            disabled={isFirstHadith || isLoading}
+            variant="outline"
+            size="icon"
+            className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+
+          <Button 
           onClick={handlePreviousHadith}
           disabled={isFirstHadith || isLoading}
-          className={cn(
-            "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
-            !isLoading && !isFirstHadith ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <ChevronLeft className="h-6 w-6 text-white mr-2" />
-          <span className="text-white font-medium">Previous</span>
-        </button>
+            variant="outline"
+            className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Previous
+          </Button>
         
         <Button
           onClick={handleRandomHadith}
           disabled={isLoading}
-          variant="outline"
-          className="h-10 px-5 py-2 bg-gradient-to-br from-teal-600 to-teal-700 border-teal-500 text-white hover:bg-teal-600 transition-colors disabled:opacity-50 rounded-full"
+            variant="default"
+            className="bg-teal-500 hover:bg-teal-600 text-slate-900 disabled:opacity-40 disabled:pointer-events-none"
         >
-          <Shuffle className="h-4 w-4 mr-1" /> Random
+            <Shuffle className="h-4 w-4 mr-2" /> Random
         </Button>
         
-        <button 
+          <Button 
           onClick={handleNextHadith}
           disabled={isLastHadith || isLoading}
-          className={cn(
-            "h-14 w-32 rounded-full flex items-center justify-center glass-card transition-all duration-300",
-            !isLoading && !isLastHadith ? "hover:bg-white/10 active:scale-95" : "opacity-50 cursor-not-allowed"
-          )}
-        >
-          <span className="text-white font-medium">Next</span>
-          <ChevronRight className="h-6 w-6 text-white ml-2" />
-        </button>
+            variant="outline"
+            className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Next
+            <ChevronRight className="h-4 w-4 ml-2" />
+          </Button>
+          
+          <Button 
+            onClick={() => {
+              handleNextHadith();
+              handleNextHadith();
+              handleNextHadith();
+              handleNextHadith();
+              handleNextHadith();
+            }}
+            disabled={isLastHadith || isLoading}
+            variant="outline"
+            size="icon"
+            className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <ChevronsRight className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <div className="relative w-full rounded-full h-1 bg-slate-800 overflow-hidden">
+          <div 
+            className="absolute top-0 left-0 h-full bg-gradient-to-r from-teal-500 to-teal-400" 
+            style={{ width: `${(currentIndex / (totalHadiths - 1)) * 100}%` }}
+          ></div>
+        </div>
       </div>
     </div>
   );

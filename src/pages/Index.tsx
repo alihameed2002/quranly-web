@@ -40,7 +40,6 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-app-background pb-20">
       <Header
-        totalPoints={progress.points / 1000}
         totalVerses={progress.totalVerses}
         timeSpent={formattedTimeSpent}
         showBack={false}

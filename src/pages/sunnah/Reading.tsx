@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import HadithReader from "@/components/HadithReader";
@@ -19,8 +18,6 @@ const SunnahReading = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [debugData, setDebugData] = useState<any>(null);
-  const [showDebug, setShowDebug] = useState(false);
   
   // Preload hadiths to ensure navigation works
   useEffect(() => {
@@ -155,51 +152,6 @@ const SunnahReading = () => {
     }
   };
   
-  const handleDebug = async () => {
-    try {
-      setLoading(true);
-      
-      // Check if the manifest exists
-      const manifestResponse = await fetch('/data/hadiths/manifest.json');
-      if (!manifestResponse.ok) {
-        throw new Error(`Manifest not found: ${manifestResponse.statusText}`);
-      }
-      
-      const manifestData = await manifestResponse.json();
-      
-      // Find the collection URL
-      const collection = manifestData.collections.find((c: any) => c.id === currentCollection);
-      if (!collection) {
-        throw new Error(`Collection ${currentCollection} not found in manifest`);
-      }
-      
-      // Try to load the collection data
-      const collectionResponse = await fetch(collection.url);
-      if (!collectionResponse.ok) {
-        throw new Error(`Failed to load collection from ${collection.url}: ${collectionResponse.statusText}`);
-      }
-      
-      const rawData = await collectionResponse.json();
-      
-      setDebugData({
-        manifest: manifestData,
-        collection: rawData,
-        url: collection.url
-      });
-      
-      setShowDebug(true);
-      setLoading(false);
-    } catch (error) {
-      console.error('Debug error:', error);
-      toast({
-        title: "Debug Info",
-        description: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        variant: "destructive"
-      });
-      setLoading(false);
-    }
-  };
-  
   if (loading) {
     return (
       <div className="min-h-screen bg-app-background flex items-center justify-center">
@@ -271,57 +223,6 @@ const SunnahReading = () => {
           initialBook={currentBook}
           initialHadith={currentHadith}
         />
-        
-        {/* Debug section */}
-        <div className="px-6 pt-4">
-          <Button
-            onClick={handleDebug}
-            variant="outline"
-            size="sm"
-            className="text-xs border-slate-700"
-          >
-            Debug Collection Data
-          </Button>
-          
-          {showDebug && debugData && (
-            <div className="mt-4 p-4 bg-slate-900 rounded text-xs overflow-auto max-h-[400px]">
-              <h3 className="text-white font-medium mb-2">Collection URL:</h3>
-              <p className="text-app-text-secondary break-all mb-4">{debugData.url}</p>
-              
-              <h3 className="text-white font-medium mb-2">Collection Structure:</h3>
-              <pre className="text-app-text-secondary">
-                {JSON.stringify({
-                  id: debugData.collection.id,
-                  metadata: debugData.collection.metadata ? 'present' : 'missing',
-                  chapters: Array.isArray(debugData.collection.chapters) 
-                    ? `${debugData.collection.chapters.length} items` 
-                    : 'missing',
-                  hadiths: Array.isArray(debugData.collection.hadiths) 
-                    ? `${debugData.collection.hadiths.length} items` 
-                    : 'missing',
-                }, null, 2)}
-              </pre>
-              
-              {debugData.collection.hadiths && debugData.collection.hadiths.length > 0 && (
-                <>
-                  <h3 className="text-white font-medium mt-4 mb-2">Sample Hadith:</h3>
-                  <pre className="text-app-text-secondary">
-                    {JSON.stringify(debugData.collection.hadiths[0], null, 2)}
-                  </pre>
-                </>
-              )}
-              
-              <Button
-                onClick={() => setShowDebug(false)}
-                variant="outline"
-                size="sm"
-                className="mt-4 text-xs border-slate-700"
-              >
-                Close Debug Info
-              </Button>
-            </div>
-          )}
-        </div>
       </main>
       
       <Navigation />

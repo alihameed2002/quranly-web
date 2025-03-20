@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from "react";
 
 interface UserProgress {
   totalVerses: number;
   currentStreak: number;
-  points: number;
   timeSpent: number; // In seconds
   lastReadDate: Date | null;
   completedSurahs: number[];
@@ -17,7 +15,6 @@ export function useProgress() {
   const [progress, setProgress] = useState<UserProgress>({
     totalVerses: 75,
     currentStreak: 7,
-    points: 457100,
     timeSpent: 1054, // 17 minutes and 34 seconds
     lastReadDate: new Date(),
     completedSurahs: [],
@@ -51,7 +48,6 @@ export function useProgress() {
       return {
         ...prev,
         totalVerses: prev.totalVerses + 1,
-        points: prev.points + 100,
         timeSpent: prev.timeSpent + 15, // Add 15 seconds per verse read
         lastReadDate: new Date(),
         completedVerses,

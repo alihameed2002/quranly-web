@@ -16,9 +16,9 @@ const QuranReading = () => {
     // Parse surah and verse from URL query parameters
     const params = new URLSearchParams(location.search);
     const surahParam = params.get('surah');
-    const verseParam = params.get('verse');
+    const verseParam = params.get('ayah');
     
-    console.log(`URL parameters: surah=${surahParam}, verse=${verseParam}`);
+    console.log(`URL parameters: surah=${surahParam}, ayah=${verseParam}`);
     
     let validSurah = 1; // Default to Al-Fatiha
     let validVerse = 1; // Default to first verse
@@ -42,7 +42,7 @@ const QuranReading = () => {
       }
     }
     
-    console.log(`Setting surah=${validSurah}, verse=${validVerse}`);
+    console.log(`Setting surah=${validSurah}, ayah=${validVerse}`);
     setCurrentSurah(validSurah);
     setCurrentVerse(validVerse);
     
@@ -82,7 +82,7 @@ const QuranReading = () => {
         
         <QuranReader
           initialSurah={currentSurah}
-          initialVerse={currentVerse}
+          initialAyah={currentVerse}
         />
       </main>
       

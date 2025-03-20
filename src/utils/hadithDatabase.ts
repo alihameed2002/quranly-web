@@ -6,6 +6,107 @@ export const COLLECTION_MAP: Record<string, string> = {
   'bukhari': 'Sahih al-Bukhari'
 };
 
+// Define the Bukhari hadith ranges for each book
+export const BUKHARI_BOOK_STRUCTURE: Record<string, { start: number, end: number, name: string }> = {
+  "1": { start: 1, end: 7, name: "Revelation (Wahy)" },
+  "2": { start: 8, end: 58, name: "Belief (Iman)" },
+  "3": { start: 59, end: 134, name: "Knowledge (Ilm)" },
+  "4": { start: 135, end: 247, name: "Ablution (Wudu)" },
+  "5": { start: 248, end: 293, name: "Bathing (Ghusl)" },
+  "6": { start: 294, end: 333, name: "Menstruation (Haid)" },
+  "7": { start: 334, end: 348, name: "Rubbing Hands and Feet with Dust (Tayammum)" },
+  "8": { start: 349, end: 520, name: "Prayers (Salat)" },
+  "9": { start: 521, end: 602, name: "Times of the Prayers (Mawaqeet as-Salat)" },
+  "10": { start: 603, end: 875, name: "Call to Prayers (Adhan)" },
+  "11": { start: 876, end: 941, name: "Friday Prayer (Jumu'ah)" },
+  "12": { start: 942, end: 947, name: "Fear Prayer (Salat al-Khawf)" },
+  "13": { start: 948, end: 989, name: "The Two Festivals (Eids)" },
+  "14": { start: 990, end: 1004, name: "Witr Prayer" },
+  "15": { start: 1005, end: 1039, name: "Invoking Allah for Rain (Istisqaa)" },
+  "16": { start: 1040, end: 1066, name: "Eclipses (Kusoof)" },
+  "17": { start: 1067, end: 1079, name: "Prostration During Recitation of Quran (Sujood at-Tilawah)" },
+  "18": { start: 1080, end: 1119, name: "Shortening the Prayers (Taqseer)" },
+  "19": { start: 1120, end: 1187, name: "Prayer at Night (Tahajjud)" },
+  "20": { start: 1188, end: 1197, name: "Virtues of Prayer in Masjid al-Haram and Masjid an-Nabawi" },
+  "21": { start: 1198, end: 1228, name: "Actions While Praying" },
+  "22": { start: 1229, end: 1236, name: "Forgetfulness in Prayer (Sahw)" },
+  "23": { start: 1237, end: 1394, name: "Funerals (Janaiz)" },
+  "24": { start: 1395, end: 1512, name: "Obligatory Charity Tax (Zakat)" },
+  "25": { start: 1513, end: 1518, name: "Obligatory Charity Tax After Ramadan (Zakat al-Fitr)" },
+  "26": { start: 1519, end: 1772, name: "Hajj (Pilgrimage)" },
+  "27": { start: 1773, end: 1805, name: "Umrah (Minor Pilgrimage)" },
+  "28": { start: 1806, end: 1812, name: "Pilgrims Prevented from Completing Hajj (Muhsar)" },
+  "29": { start: 1813, end: 1866, name: "Penalty of Hunting While on Pilgrimage" },
+  "30": { start: 1867, end: 1890, name: "Virtues of Madinah" },
+  "31": { start: 1891, end: 2007, name: "Fasting (Sawm)" },
+  "32": { start: 2008, end: 2013, name: "Praying at Night in Ramadan (Taraweeh)" },
+  "33": { start: 2014, end: 2046, name: "Retreat (I'tikaf)" },
+  "34": { start: 2047, end: 2238, name: "Sales and Trade (Buyu)" },
+  "35": { start: 2239, end: 2256, name: "Sales in Which a Price is Paid at a Later Date (Salam)" },
+  "36": { start: 2257, end: 2259, name: "Pre-emption (Shuf'a)" },
+  "37": { start: 2260, end: 2289, name: "Hiring (Ijara)" },
+  "38": { start: 2287, end: 2291, name: "Transferring a Debt (Hawala)" },
+  "39": { start: 2292, end: 2319, name: "Representation or Authorization (Wakala)" },
+  "40": { start: 2320, end: 2350, name: "Agriculture (Muzara'a)" },
+  "41": { start: 2351, end: 2383, name: "Distribution of Water (Musaqat)" },
+  "42": { start: 2384, end: 2409, name: "Loans, Payment of Loans, Freezing of Property (Qard)" },
+  "43": { start: 2410, end: 2415, name: "Disputes (Khusoomaat)" },
+  "44": { start: 2416, end: 2439, name: "Lost Things Picked Up by Someone (Luqata)" },
+  "45": { start: 2440, end: 2482, name: "Oppressions (Mazalim)" },
+  "46": { start: 2483, end: 2507, name: "Partnership (Shirkah)" },
+  "47": { start: 2508, end: 2515, name: "Mortgaging (Rahn)" },
+  "48": { start: 2516, end: 2559, name: "Manumission of Slaves (Itq)" },
+  "49": { start: 2560, end: 2636, name: "Gifts (Hiba)" },
+  "50": { start: 2637, end: 2674, name: "Witnesses (Shahadat)" },
+  "51": { start: 2675, end: 2706, name: "Peacemaking (Sulh)" },
+  "52": { start: 2707, end: 2737, name: "Conditions (Shurut)" },
+  "53": { start: 2738, end: 2781, name: "Wills and Testaments (Wasaya)" },
+  "54": { start: 2782, end: 3090, name: "Fighting for the Cause of Allah (Jihad)" },
+  "55": { start: 3091, end: 3155, name: "One-Fifth of Booty to the Cause of Allah (Khums)" },
+  "56": { start: 3156, end: 3189, name: "Jizyah and Mawaada'ah (Tax from Non-Muslims)" },
+  "57": { start: 3190, end: 3325, name: "Beginning of Creation (Bad' al-Khalq)" },
+  "58": { start: 3326, end: 3488, name: "Prophets (Anbiya)" },
+  "59": { start: 3489, end: 3648, name: "Virtues and Merits of the Prophet and His Companions (Manaqib)" },
+  "60": { start: 3649, end: 3948, name: "Companions of the Prophet (Manaqib al-Ansar)" },
+  "61": { start: 3949, end: 4066, name: "Merits of the Helpers in Madinah (Ansar)" },
+  "62": { start: 5063, end: 5250, name: "Marriage (Nikah)" },
+  "63": { start: 5251, end: 5332, name: "Divorce (Talaq)" },
+  "64": { start: 5333, end: 5364, name: "Supporting the Family (Nafaqa)" },
+  "65": { start: 5365, end: 5451, name: "Food, Meals (At'ima)" },
+  "66": { start: 5452, end: 5474, name: "Sacrifice on Occasion of Birth (Aqiqa)" },
+  "67": { start: 5475, end: 5563, name: "Hunting, Slaughtering (Dhabh)" },
+  "68": { start: 5564, end: 5577, name: "Al-Adha Festival Sacrifice (Udhiyya)" },
+  "69": { start: 5578, end: 5639, name: "Drinks (Ashriba)" },
+  "70": { start: 5640, end: 5677, name: "Patients (Marda)" },
+  "71": { start: 5678, end: 5765, name: "Medicine (Tibb)" },
+  "72": { start: 5766, end: 5885, name: "Dress (Libas)" },
+  "73": { start: 5886, end: 6079, name: "Good Manners and Form (Adab)" },
+  "74": { start: 6080, end: 6303, name: "Asking Permission (Isti'dhan)" },
+  "75": { start: 6304, end: 6411, name: "Invocations (Da'awat)" },
+  "76": { start: 6412, end: 6578, name: "Softening the Heart (Riqaq)" },
+  "77": { start: 6579, end: 6619, name: "Divine Will (Qadar)" },
+  "78": { start: 6620, end: 6707, name: "Oaths and Vows (Ayman wa al-Nudhur)" },
+  "79": { start: 6708, end: 6722, name: "Expiation for Unfulfilled Oaths (Kaffara)" },
+  "80": { start: 6723, end: 6771, name: "Laws of Inheritance (Fara'id)" },
+  "81": { start: 6772, end: 6859, name: "Limits and Punishments Set by Allah (Hudud)" },
+  "82": { start: 6860, end: 6917, name: "Blood Money (Diyaat)" },
+  "83": { start: 6918, end: 6925, name: "Apostates (Murtaddin)" },
+  "84": { start: 6926, end: 6952, name: "Coercion (Ikrah)" },
+  "85": { start: 6953, end: 6970, name: "Tricks (Hiyal)" },
+  "86": { start: 6971, end: 7047, name: "Interpretation of Dreams (Ta'beer)" },
+  "87": { start: 7048, end: 7136, name: "Afflictions and the End of the World (Fitan)" },
+  "88": { start: 7137, end: 7214, name: "Judgments (Ahkam)" },
+  "89": { start: 7215, end: 7235, name: "Wishes (Tamanni)" },
+  "90": { start: 7236, end: 7245, name: "Accepting Information Given by a Truthful Person (Tawassul)" },
+  "91": { start: 7246, end: 7298, name: "Holding Fast to the Quran and Sunnah (I'tisam)" },
+  "92": { start: 7299, end: 7563, name: "Oneness of Allah (Tawheed)" },
+  "93": { start: 7564, end: 7607, name: "Additional Hadiths" },
+  "94": { start: 7608, end: 7642, name: "Additional Hadiths" },
+  "95": { start: 7643, end: 7666, name: "Additional Hadiths" },
+  "96": { start: 7667, end: 7699, name: "Additional Hadiths" },
+  "97": { start: 7700, end: 7762, name: "Additional Hadiths" }
+};
+
 // Convert collection keys to options format for UI dropdowns
 export const getCollectionOptions = () => {
   return Object.entries(COLLECTION_MAP).map(([id, name]) => ({
@@ -103,6 +204,18 @@ export async function listCollections(): Promise<Collection[]> {
 }
 
 /**
+ * Helper function to get the book number for a hadith based on its hadith number
+ */
+export function getBookFromHadithNumber(hadithNumber: number): string {
+  for (const [bookNumber, range] of Object.entries(BUKHARI_BOOK_STRUCTURE)) {
+    if (hadithNumber >= range.start && hadithNumber <= range.end) {
+      return bookNumber;
+    }
+  }
+  return "1"; // Default to book 1 if no match found
+}
+
+/**
  * Load a specific hadith collection by ID
  */
 export async function loadCollection(collectionId: string): Promise<CollectionData | null> {
@@ -161,7 +274,14 @@ export async function loadCollection(collectionId: string): Promise<CollectionDa
     // Map hadiths based on the actual JSON structure
     let books: Book[] = [];
     
-    if (data.chapters) {
+    if (collectionId === 'bukhari') {
+      // Use the defined structure for Bukhari
+      books = Object.entries(BUKHARI_BOOK_STRUCTURE).map(([bookNumber, range]) => ({
+        bookNumber,
+        bookName: range.name,
+        hadithCount: range.end - range.start + 1
+      }));
+    } else if (data.chapters) {
       // Structure with chapters array
       books = data.chapters.map((chapter: any) => ({
         bookNumber: String(chapter.id),
@@ -187,8 +307,17 @@ export async function loadCollection(collectionId: string): Promise<CollectionDa
     // Map hadiths based on the actual JSON structure
     const hadiths: Hadith[] = (data.hadiths || []).map((h: any) => {
       // Handle different hadith structures
-      const bookNumber = String(h.bookId || h.book || h.bookNumber || "1");
+      let bookNumber = String(h.bookId || h.book || h.bookNumber || "1");
       const hadithNumber = String(h.idInBook || h.number || h.hadithNumber || h.id);
+      
+      // For Bukhari, determine the book based on hadith number
+      if (collectionId === 'bukhari') {
+        const hadithNum = parseInt(hadithNumber);
+        if (!isNaN(hadithNum)) {
+          bookNumber = getBookFromHadithNumber(hadithNum);
+        }
+      }
+      
       const chapterNumber = String(h.chapterId || h.chapter || h.chapterNumber || "");
       const arabic = typeof h.arabic === 'string' ? h.arabic : "";
       let english = "";
@@ -219,6 +348,41 @@ export async function loadCollection(collectionId: string): Promise<CollectionDa
         narrator
       };
     });
+
+    // Log verification of hadith-to-book mapping for Bukhari
+    if (collectionId === 'bukhari') {
+      let incorrectMappings = 0;
+      const badMappings = [];
+      
+      hadiths.forEach(hadith => {
+        const hadithNum = parseInt(hadith.hadithNumber);
+        if (!isNaN(hadithNum)) {
+          const bookNum = hadith.bookNumber;
+          const bookRange = BUKHARI_BOOK_STRUCTURE[bookNum];
+          
+          if (bookRange) {
+            const isInRange = hadithNum >= bookRange.start && hadithNum <= bookRange.end;
+            if (!isInRange) {
+              incorrectMappings++;
+              if (badMappings.length < 5) { // Limit to 5 examples
+                badMappings.push({
+                  hadith: hadithNum,
+                  book: bookNum,
+                  expected_range: `${bookRange.start}-${bookRange.end}`
+                });
+              }
+            }
+          }
+        }
+      });
+      
+      if (incorrectMappings > 0) {
+        console.error(`Found ${incorrectMappings} hadiths with incorrect book mappings!`);
+        console.error('Example bad mappings:', badMappings);
+      } else {
+        console.log('All Bukhari hadiths correctly mapped to their books.');
+      }
+    }
 
     // Update hadith count for each book
     books.forEach((book) => {
@@ -619,12 +783,66 @@ export async function getHadith(
   bookNumber: string,
   hadithNumber: string
 ): Promise<Hadith | null> {
+  console.log(`getHadith called with: collectionId=${collectionId}, bookNumber=${bookNumber}, hadithNumber=${hadithNumber}`);
+  
   const collection = await loadCollection(collectionId);
-  if (!collection) return null;
+  if (!collection) {
+    console.error(`Collection ${collectionId} not loaded`);
+    return null;
+  }
 
-  return collection.hadiths.find(
+  console.log(`Collection loaded with ${collection.hadiths.length} hadiths`);
+  
+  // First, try exact match
+  let hadith = collection.hadiths.find(
     h => h.bookNumber === bookNumber && h.hadithNumber === hadithNumber
-  ) || null;
+  );
+  
+  // If exact match found, return it
+  if (hadith) {
+    return hadith;
+  }
+  
+  // If no exact match is found and this is Bukhari, try to find by hadith number
+  // This is important because the book number could be mismatched
+  if (collectionId === 'bukhari') {
+    console.log('No exact match, trying to find hadith by number alone');
+    const hadithByNumber = collection.hadiths.find(h => h.hadithNumber === hadithNumber);
+    
+    if (hadithByNumber) {
+      console.log(`Found hadith ${hadithNumber} in book ${hadithByNumber.bookNumber} instead of requested book ${bookNumber}`);
+      
+      // Double check against BUKHARI_BOOK_STRUCTURE to ensure hadith is in correct book
+      const hadithNum = parseInt(hadithNumber);
+      if (!isNaN(hadithNum)) {
+        const correctBookNum = getBookFromHadithNumber(hadithNum);
+        console.log(`According to BUKHARI_BOOK_STRUCTURE, hadith ${hadithNum} should be in book ${correctBookNum}`);
+        
+        // If the book doesn't match what's expected, search by correct book and hadith number
+        if (correctBookNum !== hadithByNumber.bookNumber) {
+          console.log(`Book mismatch detected. Searching for hadith ${hadithNumber} in book ${correctBookNum}`);
+          const correctedHadith = collection.hadiths.find(
+            h => h.bookNumber === correctBookNum && h.hadithNumber === hadithNumber
+          );
+          
+          if (correctedHadith) {
+            console.log(`Found hadith in corrected book ${correctBookNum}`);
+            return correctedHadith;
+          }
+        }
+        
+        // If we still haven't found it, return what we have
+        return hadithByNumber;
+      }
+      
+      // Return what we found by hadith number
+      return hadithByNumber;
+    }
+  }
+  
+  // If still nothing found, log details and return null
+  console.log(`No match found for book=${bookNumber}, hadith=${hadithNumber}`);
+  return null;
 }
 
 /**
