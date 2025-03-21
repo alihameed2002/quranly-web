@@ -1,4 +1,3 @@
-
 import { Hadith } from './hadithTypes';
 import { 
   fetchBooks, 
@@ -96,14 +95,15 @@ export const getHadithByIndex = async (index: number): Promise<Hadith> => {
       throw new Error("No hadiths loaded");
     }
     
-    // Ensure index is within bounds
+    // Ensure index is valid
     const safeIndex = Math.max(0, Math.min(index, cachedHadiths.length - 1));
+    
     return cachedHadiths[safeIndex];
   } catch (error) {
     console.error("Error in getHadithByIndex:", error);
     // Return a placeholder hadith
     return {
-      id: 0,
+      id: "0", // Ensure ID is a string
       collection: currentActiveCollection,
       bookNumber: "1",
       chapterNumber: "1",
@@ -222,7 +222,7 @@ export const fetchHadith = async (
     
     // If everything fails, return a placeholder hadith
     return {
-      id: 0,
+      id: "0", // Ensure ID is a string
       collection: collection,
       bookNumber: bookNumber,
       chapterNumber: bookNumber,
@@ -346,17 +346,91 @@ export const searchHadith = async (query: string): Promise<Hadith[]> => {
   if (!query.trim()) return [];
   
   try {
-    return await searchHadithsInThe9Books(query);
+    // First try to use the external API
+    const apiResults = await searchHadithsInThe9Books(query);
+    
+    // If API search returns results, use them
+    if (apiResults && apiResults.length > 0) {
+      console.log(`Found ${apiResults.length} results from API search for "${query}"`);
+      return apiResults;
+    }
+    
+    // If API search fails or returns no results, use the enhanced local search
+    console.log(`No results from API, falling back to enhanced local search for "${query}"`);
+    
+    // Ensure data is loaded
+    await loadHadithData();
+    
+    if (cachedHadiths.length > 0) {
+      // Convert the query to searchable format
+      const queryLower = query.toLowerCase().trim();
+      
+      // Split into keywords for better matching
+      const keywords = queryLower
+        .split(/\s+|[.,;:!?()]/)
+        .filter(keyword => keyword.length > 0);
+      
+      // Score-based ranking for better results
+      const scoredResults = cachedHadiths.map(hadith => {
+        const textToSearch = (
+          (hadith.english || '').toLowerCase() + ' ' +
+          (hadith.narrator || '').toLowerCase()
+        );
+        
+        let score = 0;
+        
+        // Exact phrase match (highest priority)
+        if (textToSearch.includes(queryLower)) {
+          score += 100;
+        }
+        
+        // Individual keyword matches
+        for (const keyword of keywords) {
+          if (keyword.length <= 2) continue; // Skip very short keywords
+          
+          // Word boundary match
+          const wordBoundaryRegex = new RegExp(`\\b${keyword}\\b`, 'i');
+          if (wordBoundaryRegex.test(textToSearch)) {
+            score += 50;
+          } 
+          // Substring match
+          else if (textToSearch.includes(keyword)) {
+            score += 20;
+          }
+        }
+        
+        // Calculate match ratio for keywords
+        const keywordMatchCount = keywords.filter(kw => 
+          kw.length > 2 && textToSearch.includes(kw)
+        ).length;
+        
+        if (keywords.length > 0) {
+          const keywordMatchRatio = keywordMatchCount / keywords.length;
+          score += keywordMatchRatio * 40;
+        }
+        
+        return { hadith, score };
+      });
+      
+      // Filter and sort by score
+      const filteredResults = scoredResults
+        .filter(result => result.score > 0)
+        .sort((a, b) => b.score - a.score);
+      
+      return filteredResults.map(result => result.hadith);
+    }
+    
+    return [];
   } catch (error) {
     console.error("Search error:", error);
     
-    // Fallback to local search if API fails
+    // Ultimate fallback to very simple search if everything else fails
     if (cachedHadiths.length > 0) {
       const searchTerms = query.toLowerCase().split(' ');
       
       return cachedHadiths.filter(hadith => {
         const englishText = hadith.english.toLowerCase();
-        return searchTerms.every(term => englishText.includes(term));
+        return searchTerms.some(term => englishText.includes(term));
       });
     }
     
@@ -379,7 +453,7 @@ export const getRandomHadith = async (): Promise<Hadith> => {
     console.error("Error in getRandomHadith:", error);
     // Return a placeholder hadith
     return {
-      id: 0,
+      id: "0",  // Convert to string to match type
       collection: currentActiveCollection,
       bookNumber: "1",
       chapterNumber: "1",

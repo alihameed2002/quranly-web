@@ -48,8 +48,8 @@ const BUKHARI_CATEGORIES: { [key: string]: { start: number; end: number; name: s
   "Belief": { start: 8, end: 58, name: "Belief (Kitab Al-Iman)" },
   "Knowledge": { start: 59, end: 134, name: "Knowledge (Kitab Al-Ilm)" },
   "Ablutions": { start: 135, end: 247, name: "Ablutions (Wudu') (Kitab Al-Wudu')" },
-  "Bathing": { start: 248, end: 292, name: "Bathing (Ghusl) (Kitab Al-Ghusl)" },
-  "MenstrualPeriods": { start: 293, end: 333, name: "Menstrual Periods (Kitab Al-Haid)" },
+  "Bathing": { start: 248, end: 293, name: "Bathing (Ghusl) (Kitab Al-Ghusl)" },
+  "MenstrualPeriods": { start: 294, end: 333, name: "Menstrual Periods (Kitab Al-Haid)" },
   "Tayammum": { start: 334, end: 348, name: "Rubbing Hands and Feet with Dust (Tayammum) (Kitab At-Tayammum)" },
   "Prayers": { start: 349, end: 520, name: "Prayers (Salat) (Kitab As-Salat)" },
   "PrayerTimes": { start: 521, end: 602, name: "Times of the Prayers (Kitab Mawaqit As-Salat)" },
@@ -64,14 +64,15 @@ const BUKHARI_CATEGORIES: { [key: string]: { start: number; end: number; name: s
   "ShorteningPrayers": { start: 1080, end: 1119, name: "Shortening the Prayers (At-Taqseer) (Kitab At-Taqseer)" },
   "NightPrayers": { start: 1120, end: 1187, name: "Prayer at Night (Tahajjud) (Kitab At-Tahajjud)" },
   "PrayerVirtues": { start: 1188, end: 1197, name: "Virtues of Prayer in Makkah and Madinah (Kitab Fadl As-Salat fi Masjid Makkah wa Madinah)" },
-  "PrayerActions": { start: 1198, end: 1223, name: "Actions While Praying (Kitab Al-Amal fi As-Salat)" },
-  "Forgetfulness": { start: 1224, end: 1236, name: "Forgetfulness in Prayer (Kitab As-Sahw)" },
+  "PrayerActions": { start: 1198, end: 1228, name: "Actions While Praying (Kitab Al-Amal fi As-Salat)" },
+  "Forgetfulness": { start: 1229, end: 1236, name: "Forgetfulness in Prayer (Kitab As-Sahw)" },
   "Funerals": { start: 1237, end: 1394, name: "Funerals (Al-Jana'iz) (Kitab Al-Jana'iz)" },
   "Zakat": { start: 1395, end: 1512, name: "Obligatory Charity Tax (Zakat) (Kitab Az-Zakat)" },
-  "Hajj": { start: 1513, end: 1772, name: "Hajj (Pilgrimage) (Kitab Al-Hajj)" },
+  "ZakatFitr": { start: 1513, end: 1518, name: "Obligatory Charity Tax After Ramadan (Zakat al-Fitr) (Kitab Zakat Al-Fitr)" },
+  "Hajj": { start: 1519, end: 1772, name: "Hajj (Pilgrimage) (Kitab Al-Hajj)" },
   "Umrah": { start: 1773, end: 1805, name: "Umrah (Minor Pilgrimage) (Kitab Al-Umrah)" },
-  "PreventedPilgrims": { start: 1806, end: 1820, name: "Pilgrims Prevented from Completing Hajj (Kitab Al-Muhsar)" },
-  "HuntingPenalty": { start: 1821, end: 1866, name: "Penalty of Hunting While on Pilgrimage (Kitab Jazaa As-Said)" },
+  "PreventedPilgrims": { start: 1806, end: 1812, name: "Pilgrims Prevented from Completing Hajj (Kitab Al-Muhsar)" },
+  "HuntingPenalty": { start: 1813, end: 1866, name: "Penalty of Hunting While on Pilgrimage (Kitab Jazaa As-Said)" },
   "MadinahVirtues": { start: 1867, end: 1890, name: "Virtues of Madinah (Kitab Fada'il Al-Madinah)" },
   "Fasting": { start: 1891, end: 2007, name: "Fasting (Kitab As-Sawm)" },
   "Taraweeh": { start: 2008, end: 2013, name: "Praying at Night in Ramadan (Taraweeh) (Kitab Salat At-Tarawih)" },
@@ -961,12 +962,12 @@ export default function HadithReader({
                                 {hadithNum}
                               </Button>
                             ))}
-          </div>
+                        </div>
                         
                         {getFilteredHadithsForBook(selectedBookForSubmenu).length === 0 && (
                           <div className="py-8 text-center text-app-text-secondary">
                             No hadiths match your filter
-        </div>
+                          </div>
                         )}
                       </ScrollArea>
                     </div>
@@ -1002,7 +1003,7 @@ export default function HadithReader({
                                     <div className="flex w-full justify-between items-center">
                                       <span className="font-medium">Book {bookId}</span>
                                       <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full">
-                                        {book.end - book.start + 1} hadiths
+                                        {book.end - book.start + 1} hadith{book.end - book.start !== 0 ? 's' : ''}
                                       </span>
                                     </div>
                                     <div className="text-xs text-slate-400 text-left mt-1 truncate w-full">
@@ -1048,7 +1049,7 @@ export default function HadithReader({
                                     <div className="flex w-full justify-between items-center">
                                       <span className="font-medium">{category.name}</span>
                                       <span className="text-xs bg-teal-500/20 text-teal-400 px-2 py-1 rounded-full">
-                                        {category.end - category.start + 1} hadiths
+                                        {category.end - category.start + 1} hadith{category.end - category.start !== 0 ? 's' : ''}
                                       </span>
                                     </div>
                                     <div className="text-xs text-slate-400 text-left mt-1">
@@ -1088,7 +1089,7 @@ export default function HadithReader({
         <div className="px-6">
           <div className="flex justify-between items-center mb-2">
             <div className="text-app-text-secondary text-sm">
-              Hadith {currentHadith}
+              Book {currentBook} • Hadith {currentHadith}
             </div>
             <div className="text-app-text-secondary text-sm">
               {currentIndex + 1} of {totalHadiths}

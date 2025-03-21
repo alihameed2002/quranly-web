@@ -1,7 +1,7 @@
-
 import { Verse, extendedSampleVerses } from './quranTypes';
 import { fetchStaticQuranData } from './verseFetching';
 import { fetchSurahs } from './surahFetching';
+import { getAllVerses } from './indexedDB';
 
 // Cache management for full Quran data
 let fullQuranData: Verse[] = [];
@@ -15,7 +15,7 @@ export const fetchFullQuranData = async (): Promise<Verse[]> => {
   // If we already have valid cached data, return it immediately
   const now = Date.now();
   if (fullQuranData.length > 0 && (now - lastDataLoad) < DATA_CACHE_LIFETIME) {
-    console.log("Using cached Quran data");
+    console.log("Using cached Quran data from memory");
     return fullQuranData;
   }
 
@@ -32,7 +32,19 @@ export const fetchFullQuranData = async (): Promise<Verse[]> => {
   // Create and store the promise for potential concurrent requests
   quranDataLoadPromise = new Promise<Verse[]>(async (resolve) => {
     try {
-      // First try to fetch from the static JSON source
+      // First try to get from IndexedDB
+      const versesFromDB = await getAllVerses();
+      if (versesFromDB && versesFromDB.length > 0) {
+        console.log(`Retrieved ${versesFromDB.length} verses from IndexedDB`);
+        fullQuranData = versesFromDB;
+        lastDataLoad = Date.now();
+        resolve(fullQuranData);
+        isQuranDataLoading = false;
+        quranDataLoadPromise = null;
+        return;
+      }
+      
+      // If not in IndexedDB, try to fetch from the static JSON source
       let verses: Verse[] = [];
       
       try {

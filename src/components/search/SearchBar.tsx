@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -23,18 +22,18 @@ const SearchBar = ({
 }: SearchBarProps) => {
   const debouncedSearch = useCallback(
     debounce((searchTerm: string) => {
-      if (searchTerm.trim().length >= 3) {
+      if (searchTerm.trim().length >= 2) {
         handleSearch(searchTerm);
       }
-    }, 500),
-    []
+    }, 600),
+    [handleSearch]
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = e.target.value;
     setQuery(newQuery);
     
-    if (newQuery.length >= 3) {
+    if (newQuery.length >= 2) {
       debouncedSearch(newQuery);
     } else if (newQuery.length === 0) {
       // Clear search results if query is empty
@@ -56,7 +55,7 @@ const SearchBar = ({
           type="text"
           value={query}
           onChange={handleInputChange}
-          placeholder="Search the Quran..."
+          placeholder="Search by keywords, phrases, or topics..."
           className="w-full h-12 bg-white/5 border border-white/10 rounded-lg px-4 pr-12 text-white"
           onKeyDown={handleKeyDown}
           disabled={isInitializing}

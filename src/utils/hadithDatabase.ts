@@ -1,5 +1,15 @@
 import { Hadith } from './hadithTypes';
 import { toast } from "@/components/ui/use-toast";
+import { 
+  getCollectionData, 
+  saveCollectionData, 
+  getHadithsByCollection,
+  saveHadiths,
+  getHadith as getHadithFromDB,
+  getHadithsByBook as getHadithsByBookFromDB,
+  getManifest,
+  saveManifest
+} from './indexedDB';
 
 // Collection IDs to Book Names mapping
 export const COLLECTION_MAP: Record<string, string> = {
@@ -98,13 +108,7 @@ export const BUKHARI_BOOK_STRUCTURE: Record<string, { start: number, end: number
   "88": { start: 7137, end: 7214, name: "Judgments (Ahkam)" },
   "89": { start: 7215, end: 7235, name: "Wishes (Tamanni)" },
   "90": { start: 7236, end: 7245, name: "Accepting Information Given by a Truthful Person (Tawassul)" },
-  "91": { start: 7246, end: 7298, name: "Holding Fast to the Quran and Sunnah (I'tisam)" },
-  "92": { start: 7299, end: 7563, name: "Oneness of Allah (Tawheed)" },
-  "93": { start: 7564, end: 7607, name: "Additional Hadiths" },
-  "94": { start: 7608, end: 7642, name: "Additional Hadiths" },
-  "95": { start: 7643, end: 7666, name: "Additional Hadiths" },
-  "96": { start: 7667, end: 7699, name: "Additional Hadiths" },
-  "97": { start: 7700, end: 7762, name: "Additional Hadiths" }
+  "91": { start: 7246, end: 7277, name: "Holding Fast to the Quran and Sunnah (I'tisam)" }
 };
 
 // Convert collection keys to options format for UI dropdowns
@@ -169,12 +173,25 @@ export async function loadManifest(): Promise<Manifest> {
   if (manifest) return manifest;
   
   try {
+    // First check if manifest exists in IndexedDB
+    const offlineManifest = await getManifest();
+    if (offlineManifest) {
+      console.log('Using manifest from IndexedDB');
+      manifest = offlineManifest;
+      return manifest;
+    }
+    
+    // If not in IndexedDB, fetch from network
     const response = await fetch('/data/hadiths/manifest.json');
     if (!response.ok) {
       throw new Error(`Failed to load manifest: ${response.statusText}`);
     }
     
     manifest = await response.json();
+    
+    // Save manifest to IndexedDB for offline use
+    await saveManifest(manifest);
+    
     return manifest;
   } catch (error) {
     console.error("Error loading manifest:", error);
@@ -219,12 +236,27 @@ export function getBookFromHadithNumber(hadithNumber: number): string {
  * Load a specific hadith collection by ID
  */
 export async function loadCollection(collectionId: string): Promise<CollectionData | null> {
+  // First check memory cache
   if (collectionsCache[collectionId]) {
+    console.log(`Using collection data from memory cache for ${collectionId}`);
     return collectionsCache[collectionId];
   }
 
   try {
+    // Then check IndexedDB
+    console.log(`Checking IndexedDB for collection ${collectionId}`);
+    const offlineData = await getCollectionData(collectionId);
+    
+    if (offlineData) {
+      console.log(`Found collection data in IndexedDB for ${collectionId}`);
+      collectionsCache[collectionId] = offlineData;
+      return offlineData;
+    }
+    
+    // If not in IndexedDB, fetch from network
+    console.log(`No offline data found for ${collectionId}, fetching from network`);
     const collectionInfo = await getCollectionInfo(collectionId);
+    
     if (!collectionInfo) {
       throw new Error(`Collection ${collectionId} not found`);
     }
@@ -396,7 +428,14 @@ export async function loadCollection(collectionId: string): Promise<CollectionDa
       hadiths
     };
 
+    // Save to memory cache
     collectionsCache[collectionId] = collectionData;
+    
+    // Save to IndexedDB for offline use
+    console.log(`Saving collection data to IndexedDB for ${collectionId}`);
+    await saveCollectionData(collectionId, collectionData);
+    await saveHadiths(hadiths);
+    
     return collectionData;
   } catch (error) {
     console.error(`Error loading collection ${collectionId}:`, error);
@@ -785,6 +824,18 @@ export async function getHadith(
 ): Promise<Hadith | null> {
   console.log(`getHadith called with: collectionId=${collectionId}, bookNumber=${bookNumber}, hadithNumber=${hadithNumber}`);
   
+  // First try to get from IndexedDB
+  try {
+    const hadithFromDB = await getHadithFromDB(collectionId, bookNumber, hadithNumber);
+    if (hadithFromDB) {
+      console.log(`Found hadith in IndexedDB: ${collectionId}, Book ${bookNumber}, Hadith ${hadithNumber}`);
+      return hadithFromDB;
+    }
+  } catch (dbError) {
+    console.warn(`Error retrieving hadith from IndexedDB:`, dbError);
+  }
+  
+  // If not in IndexedDB, try to get from the collection data
   const collection = await loadCollection(collectionId);
   if (!collection) {
     console.error(`Collection ${collectionId} not loaded`);
@@ -862,6 +913,18 @@ export async function getHadithsByBook(
   collectionId: string,
   bookNumber: string
 ): Promise<Hadith[]> {
+  // First try to get from IndexedDB
+  try {
+    const hadithsFromDB = await getHadithsByBookFromDB(collectionId, bookNumber);
+    if (hadithsFromDB && hadithsFromDB.length > 0) {
+      console.log(`Found ${hadithsFromDB.length} hadiths in IndexedDB for collection ${collectionId}, book ${bookNumber}`);
+      return hadithsFromDB;
+    }
+  } catch (dbError) {
+    console.warn(`Error retrieving hadiths by book from IndexedDB:`, dbError);
+  }
+  
+  // If not in IndexedDB, try to get from the collection data
   const collection = await loadCollection(collectionId);
   if (!collection) return [];
   
@@ -907,14 +970,84 @@ export async function searchHadiths(
       .filter(Boolean)
       .flatMap(collection => collection!.hadiths);
     
-    // Convert query to lowercase for case-insensitive search
-    const queryLower = query.toLowerCase();
+    // Preprocessing the query for enhanced matching
+    const queryLower = query.toLowerCase().trim();
     
-    // Search in the hadith text
-    return allHadiths.filter(hadith => 
-      hadith.english.toLowerCase().includes(queryLower) ||
-      (hadith.narrator && hadith.narrator.toLowerCase().includes(queryLower))
-    );
+    // Split the query into individual keywords
+    // Use regex to handle multiple spaces and punctuation
+    const keywords = queryLower
+      .split(/\s+|[.,;:!?()]/)
+      .filter(keyword => keyword.length > 0);
+    
+    // Create variations of keywords for better matching (stemming, plurals, etc.)
+    const keywordVariations = generateKeywordVariations(keywords);
+    
+    // Score-based filtering with enhanced relevance
+    const scoredResults = allHadiths.map(hadith => {
+      const textToSearch = (
+        (hadith.english || '').toLowerCase() + ' ' +
+        (hadith.narrator || '').toLowerCase()
+      );
+      
+      let score = 0;
+      let matchDetails: {[key: string]: boolean} = {};
+      
+      // Check exact full phrase match (highest priority)
+      if (textToSearch.includes(queryLower)) {
+        score += 100;
+        matchDetails['exactPhrase'] = true;
+      }
+      
+      // Check exact keyword matches
+      for (const keyword of keywords) {
+        if (keyword.length <= 2) continue; // Skip very short keywords
+        
+        // Word boundary matching using regex
+        const wordBoundaryRegex = new RegExp(`\\b${keyword}\\b`, 'i');
+        if (wordBoundaryRegex.test(textToSearch)) {
+          score += 50;
+          matchDetails[keyword] = true;
+        } 
+        // Substring match
+        else if (textToSearch.includes(keyword)) {
+          score += 30;
+          matchDetails[keyword] = true;
+        }
+      }
+      
+      // Check keyword variations
+      for (const variation of keywordVariations) {
+        if (variation.length <= 2) continue; // Skip very short variations
+        
+        if (textToSearch.includes(variation)) {
+          score += 20;
+          matchDetails[`var:${variation}`] = true;
+        }
+      }
+      
+      // Check how many keywords match
+      const keywordMatchCount = keywords.filter(kw => 
+        kw.length > 2 && textToSearch.includes(kw)
+      ).length;
+      
+      const keywordMatchRatio = keywordMatchCount / keywords.length;
+      score += keywordMatchRatio * 50;
+      
+      // Return scored result
+      return {
+        hadith,
+        score,
+        matchDetails
+      };
+    });
+    
+    // Filter out zero-score results and sort by score (descending)
+    const filteredResults = scoredResults
+      .filter(result => result.score > 0)
+      .sort((a, b) => b.score - a.score);
+    
+    // Return just the hadiths, not the scoring details
+    return filteredResults.map(result => result.hadith);
   } catch (error) {
     console.error("Error searching hadiths:", error);
     toast({
@@ -924,6 +1057,67 @@ export async function searchHadiths(
     });
     return [];
   }
+}
+
+/**
+ * Generate variations of keywords for more comprehensive matching
+ */
+function generateKeywordVariations(keywords: string[]): string[] {
+  const variations: string[] = [];
+  
+  for (const keyword of keywords) {
+    if (keyword.length <= 2) continue; // Skip very short keywords
+    
+    // Add the original keyword
+    variations.push(keyword);
+    
+    // Add common plural/singular forms
+    if (keyword.endsWith('s')) {
+      variations.push(keyword.slice(0, -1)); // Remove 's'
+    } else {
+      variations.push(keyword + 's'); // Add 's'
+    }
+    
+    // Handle 'ing' form
+    if (keyword.endsWith('ing') && keyword.length > 5) {
+      variations.push(keyword.slice(0, -3)); // Remove 'ing'
+      variations.push(keyword.slice(0, -3) + 'e'); // Replace 'ing' with 'e'
+    }
+    
+    // Handle 'ed' form
+    if (keyword.endsWith('ed') && keyword.length > 4) {
+      variations.push(keyword.slice(0, -2)); // Remove 'ed'
+      variations.push(keyword.slice(0, -1)); // Remove 'd'
+    }
+    
+    // Add common Islamic terms variations
+    const islamicTermsMap: Record<string, string[]> = {
+      'prophet': ['muhammad', 'messenger', 'rasul', 'rasulullah', 'nabi'],
+      'muhammad': ['prophet', 'messenger', 'rasul', 'rasulullah', 'nabi'],
+      'god': ['allah', 'lord'],
+      'allah': ['god', 'lord'],
+      'prayer': ['salah', 'salat', 'namaz'],
+      'salah': ['prayer', 'salat', 'namaz'],
+      'salat': ['prayer', 'salah', 'namaz'],
+      'fasting': ['sawm', 'siyam', 'roza'],
+      'quran': ['book', 'recitation', 'revelation'],
+      'hadith': ['narration', 'saying', 'tradition', 'sunnah'],
+      'sunnah': ['tradition', 'way', 'path', 'hadith'],
+      'charity': ['zakat', 'sadaqah', 'alms'],
+      'pilgrimage': ['hajj', 'umrah'],
+      'paradise': ['jannah', 'heaven'],
+      'hellfire': ['jahannam', 'hell', 'fire'],
+      'sin': ['wrongdoing', 'transgression', 'disobedience']
+    };
+    
+    // Add variations from the Islamic terms map
+    if (keyword in islamicTermsMap) {
+      variations.push(...islamicTermsMap[keyword]);
+    }
+  }
+  
+  // Remove duplicates
+  return [...new Set(variations)];
 }
 
 // Get total hadith count for a collection

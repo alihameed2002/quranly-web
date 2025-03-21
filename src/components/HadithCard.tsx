@@ -31,6 +31,10 @@ const HadithCard = ({
     e.stopPropagation();
     setExpanded(!expanded);
   };
+  
+  // Format book and hadith information consistently
+  const bookInfoDisplay = `Book ${hadith.bookNumber}`;
+  const hadithInfoDisplay = `Hadith ${hadith.hadithNumber}`;
 
   return (
     <Card 
@@ -39,9 +43,14 @@ const HadithCard = ({
     >
       <CardContent className="p-4">
         <div className="flex justify-between items-start">
-          <div className="flex items-center mb-2">
-            <BookOpenText className="w-4 h-4 mr-2 text-primary" />
-            <span className="text-sm font-medium text-primary">{hadith.reference}</span>
+          <div className="flex flex-col mb-2">
+            <div className="flex items-center">
+              <BookOpenText className="w-4 h-4 mr-2 text-primary" />
+              <span className="text-sm font-medium text-primary">{hadith.reference}</span>
+            </div>
+            <div className="mt-1 text-xs text-gray-400 pl-6">
+              {bookInfoDisplay} • {hadithInfoDisplay}
+            </div>
           </div>
           <Button
             variant="ghost"

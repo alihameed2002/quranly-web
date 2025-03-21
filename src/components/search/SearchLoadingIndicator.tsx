@@ -13,10 +13,13 @@ const SearchLoadingIndicator = ({ query }: SearchLoadingIndicatorProps) => {
         </div>
         <div className="flex items-center gap-2 justify-center mb-2">
           <Search className="h-4 w-4 text-app-green" />
-          <span className="text-sm font-medium text-white">Searching...</span>
+          <span className="text-sm font-medium text-white">Comprehensive Search</span>
         </div>
-        <p className="text-xs text-app-text-secondary">
-          Looking for "{query}" in the hadith database
+        <p className="text-xs text-app-text-secondary mb-1">
+          Searching for "{query}" across all hadith collections
+        </p>
+        <p className="text-xs text-app-text-secondary opacity-75">
+          Finding exact matches, related terms, and similar concepts
         </p>
       </div>
     </div>

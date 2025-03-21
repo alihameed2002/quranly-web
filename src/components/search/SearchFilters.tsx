@@ -4,7 +4,7 @@ interface SearchFiltersProps {
   expandedTerms: string[];
   currentCollection: string;
   collectionsOptions: {id: string, name: string}[];
-  onCollectionChange: (collectionId: string) => Promise<void>;
+  onCollectionChange?: (collectionId: string) => Promise<void>;
 }
 
 const SearchFilters = ({ 
@@ -35,6 +35,27 @@ const SearchFilters = ({
           </span>
         )}
       </div>
+      
+      {collectionsOptions.length > 1 && onCollectionChange && (
+        <div className="mt-4">
+          <div className="text-sm text-white mb-2">Collection:</div>
+          <div className="flex flex-wrap gap-2">
+            {collectionsOptions.map(option => (
+              <button
+                key={option.id}
+                className={`px-3 py-1 text-sm rounded-full transition ${
+                  currentCollection === option.id
+                    ? 'bg-green-600 text-white'
+                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                }`}
+                onClick={() => onCollectionChange(option.id)}
+              >
+                {option.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

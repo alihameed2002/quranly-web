@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Navigation from "@/components/Navigation";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BookOpen, Search, Compass, Globe } from "lucide-react";
+import { BookOpen, Search, Compass } from "lucide-react";
 import { 
   searchHadiths, 
   getBooks, 
   loadCollection,
-  listCollections,
   COLLECTION_MAP 
 } from "@/utils/hadithDatabase";
 import { Hadith } from "@/utils/hadithTypes";
@@ -17,8 +16,8 @@ import SearchLoadingIndicator from "@/components/search/SearchLoadingIndicator";
 import SunnahSearchResults from "@/components/search/SunnahSearchResults";
 import HadithChapterBrowser from "@/components/HadithChapterBrowser";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { expandSearchTerms } from "@/utils/searchUtils";
 
 const SunnahExplore = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -28,9 +27,10 @@ const SunnahExplore = () => {
   const [expandedTerms, setExpandedTerms] = useState<string[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("browse"); // Default to browse tab
-  const [collections, setCollections] = useState<{id: string, name: string}[]>([]);
-  const [activeCollection, setActiveCollection] = useState("bukhari");
   const [isLoadingCollection, setIsLoadingCollection] = useState(false);
+  
+  // Always use Bukhari as the only collection
+  const activeCollection = "bukhari";
   
   const resultsContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -38,105 +38,58 @@ const SunnahExplore = () => {
   const location = useLocation();
   const navigate = useNavigate();
   
-  // Load collections on initial render
   useEffect(() => {
-    const loadAvailableCollections = async () => {
+    // Initialize the search system
+    const initializeSearch = async () => {
       try {
-        const availableCollections = await listCollections();
-        setCollections(availableCollections.map(c => ({
-          id: c.id,
-          name: c.name
-        })));
+        setIsInitializing(true);
+        // Load the Bukhari collection to ensure it's available
+        await loadCollection("bukhari");
+        
+        // Check if we're coming back from a hadith with search results
+        if (location.state?.fromSearch) {
+          setSearchQuery(location.state.lastQuery || "");
+          if (location.state.results) {
+            setSearchResults(location.state.results);
+            setActiveTab("search");
+            
+            // Restore scroll position if available
+            if (location.state.scrollPosition && resultsContainerRef.current) {
+              setTimeout(() => {
+                if (resultsContainerRef.current) {
+                  resultsContainerRef.current.scrollTop = location.state.scrollPosition;
+                }
+              }, 0);
+            }
+          }
+        }
+        
+        // Load recent searches from localStorage
+        const storedSearches = localStorage.getItem("recentHadithSearches");
+        if (storedSearches) {
+          try {
+            setRecentSearches(JSON.parse(storedSearches));
+          } catch (error) {
+            console.error("Failed to parse recent searches:", error);
+          }
+        }
       } catch (error) {
-        console.error("Error loading collections:", error);
+        console.error("Error initializing search:", error);
         toast({
-          title: "Failed to load collections",
-          description: "Using default Bukhari collection",
+          title: "Error",
+          description: "Failed to initialize search. Please try again.",
           variant: "destructive",
         });
+      } finally {
+        setIsInitializing(false);
       }
     };
     
-    loadAvailableCollections();
-  }, [toast]);
+    initializeSearch();
+  }, [location, toast]);
   
-  // Check if there's state from navigation
-  useEffect(() => {
-    if (location.state?.preserveSearch) {
-      const { lastQuery, results, scrollPosition } = location.state;
-      
-      if (lastQuery) {
-        console.log("Restoring previous search:", lastQuery);
-        setSearchQuery(lastQuery);
-        setActiveTab("search");
-      }
-      
-      if (results && Array.isArray(results)) {
-        console.log(`Restoring ${results.length} search results`);
-        setSearchResults(results);
-      }
-      
-      // Restore scroll position after render
-      setTimeout(() => {
-        if (resultsContainerRef.current && scrollPosition) {
-          resultsContainerRef.current.scrollTop = scrollPosition;
-        }
-      }, 100);
-    }
-    
-    // Load recent searches from localStorage
-    const savedSearches = localStorage.getItem("sunnahRecentSearches");
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
-    }
-    
-    setIsInitializing(false);
-  }, [location.state]);
-  
-  const handleCollectionChange = async (collectionId: string) => {
-    if (collectionId === activeCollection) return;
-    
-    setIsLoadingCollection(true);
-    setActiveCollection(collectionId);
-    
-    try {
-      const collectionData = await loadCollection(collectionId);
-      if (collectionData) {
-        toast({
-          title: "Collection Changed",
-          description: `Now browsing ${COLLECTION_MAP[collectionId] || collectionId}`,
-        });
-      } else {
-        throw new Error("Failed to load collection");
-      }
-    } catch (error) {
-      console.error(`Error loading collection ${collectionId}:`, error);
-      toast({
-        title: "Error Loading Collection",
-        description: "Failed to load selected collection",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoadingCollection(false);
-    }
-  };
-  
-  const addToRecentSearches = (query: string) => {
-    if (!query.trim()) return;
-    
-    const updatedSearches = [
-      query,
-      ...recentSearches.filter(s => s !== query)
-    ].slice(0, 5);
-    
-    setRecentSearches(updatedSearches);
-    localStorage.setItem("sunnahRecentSearches", JSON.stringify(updatedSearches));
-  };
-  
-  const handleSearch = async (query?: string) => {
-    const queryToUse = query || searchQuery;
-    
-    if (!queryToUse.trim()) {
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
       setSearchResults([]);
       return;
     }
@@ -145,29 +98,32 @@ const SunnahExplore = () => {
     setActiveTab("search");
     
     try {
-      const results = await searchHadiths(queryToUse, activeCollection ? [activeCollection] : []);
-      console.log(`Found ${results.length} results for "${queryToUse}"`);
+      // Add to recent searches
+      const newRecentSearches = [
+        query,
+        ...recentSearches.filter(s => s !== query)
+      ].slice(0, 5);
+      
+      setRecentSearches(newRecentSearches);
+      localStorage.setItem("recentHadithSearches", JSON.stringify(newRecentSearches));
+      
+      // Set expanded terms for filters
+      const terms = expandSearchTerms(query);
+      setExpandedTerms(terms);
+      
+      // Perform search
+      const results = await searchHadiths(query, [activeCollection]);
       setSearchResults(results);
       
-      if (results.length > 0) {
-        addToRecentSearches(queryToUse);
+      // Scroll to top of results
+      if (resultsContainerRef.current) {
+        resultsContainerRef.current.scrollTop = 0;
       }
-      
-      // Update expanded terms for search filters display
-      import('@/utils/searchUtils').then(({ expandSearchTerms }) => {
-        const terms = expandSearchTerms(queryToUse);
-        setExpandedTerms(terms);
-      }).catch(err => {
-        console.error("Error importing searchUtils:", err);
-        setExpandedTerms(queryToUse.split(' '));
-      });
-      
     } catch (error) {
       console.error("Search error:", error);
-      setSearchResults([]);
       toast({
-        title: "Search Error",
-        description: "Failed to search hadith collection",
+        title: "Search Failed",
+        description: "An error occurred while searching. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -200,7 +156,7 @@ const SunnahExplore = () => {
           </div>
           <div>
             <h1 className="text-2xl font-semibold text-white">Explore Sunnah</h1>
-            <p className="text-app-text-secondary">Browse and search authentic hadith collections</p>
+            <p className="text-app-text-secondary">Browse and search authentic hadith from Sahih al-Bukhari</p>
           </div>
         </div>
         
@@ -215,36 +171,7 @@ const SunnahExplore = () => {
                 <Compass className="h-4 w-4 mr-2" />
                 Browse
               </TabsTrigger>
-              <TabsTrigger value="collections" className="flex-1">
-                <Globe className="h-4 w-4 mr-2" />
-                Collections
-              </TabsTrigger>
             </TabsList>
-            
-            {/* Collection selector - visible in both browse and search tabs */}
-            {(activeTab === "browse" || activeTab === "search") && (
-              <div className="mb-4">
-                <Select value={activeCollection} onValueChange={handleCollectionChange} disabled={isLoadingCollection}>
-                  <SelectTrigger className="glass-card border-white/20 text-white">
-                    <SelectValue placeholder="Select Collection" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-app-background-dark border-white/20">
-                    {collections.map(collection => (
-                      <SelectItem 
-                        key={collection.id} 
-                        value={collection.id}
-                        className="text-white hover:bg-white/10"
-                      >
-                        {collection.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isLoadingCollection && (
-                  <p className="text-app-text-secondary text-sm mt-1 animate-pulse">Loading collection data...</p>
-                )}
-              </div>
-            )}
             
             <TabsContent value="search" className="space-y-4">
               <SearchBar 
@@ -260,8 +187,7 @@ const SunnahExplore = () => {
                 <SearchFilters
                   expandedTerms={expandedTerms}
                   currentCollection={activeCollection}
-                  collectionsOptions={collections}
-                  onCollectionChange={handleCollectionChange}
+                  collectionsOptions={[{id: 'bukhari', name: 'Sahih al-Bukhari'}]}
                 />
               </div>
               
@@ -294,29 +220,6 @@ const SunnahExplore = () => {
                 onHadithClick={navigateToHadith}
                 isLoading={isLoadingCollection}
               />
-            </TabsContent>
-            
-            <TabsContent value="collections" className="space-y-4">
-              <h3 className="text-lg font-medium text-white">Hadith Collections</h3>
-              <p className="text-app-text-secondary mb-4">
-                Select a hadith collection to browse and study
-              </p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {collections.map(collection => (
-                  <div
-                    key={collection.id}
-                    className="glass-card p-4 rounded-lg cursor-pointer hover:bg-white/5 transition"
-                    onClick={() => {
-                      handleCollectionChange(collection.id);
-                      setActiveTab("browse");
-                    }}
-                  >
-                    <h4 className="text-white font-medium">{collection.name}</h4>
-                    <p className="text-sm text-app-text-secondary">{collection.id === activeCollection ? "Currently selected" : "Click to browse"}</p>
-                  </div>
-                ))}
-              </div>
             </TabsContent>
           </Tabs>
         </div>

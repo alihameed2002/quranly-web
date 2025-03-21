@@ -3,6 +3,29 @@ import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
+/**
+ * Clean up verse translation text by removing unwanted HTML tags and footnotes
+ */
+function cleanTranslationText(text: string): string {
+  if (!text) return '';
+  
+  // Remove <sup> tags and their content (footnotes)
+  let cleaned = text.replace(/<sup[^>]*>.*?<\/sup>/g, '');
+  
+  // Remove footnote references in various formats
+  cleaned = cleaned.replace(/<sup foot_note=\d+>\d+<\/sup>/g, '');
+  cleaned = cleaned.replace(/\[\d+\]/g, ''); // Remove [1], [2], etc.
+  cleaned = cleaned.replace(/\(\d+\)/g, ''); // Remove (1), (2), etc.
+  
+  // Remove other HTML tags that might be present
+  cleaned = cleaned.replace(/<[^>]*>/g, '');
+  
+  // Clean up extra spaces
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  
+  return cleaned;
+}
+
 interface VerseCardProps {
   surahName: string;
   surahNumber: number;
@@ -30,6 +53,9 @@ export default function VerseCard({
   // Ensure we have valid numbers
   const displaySurahNumber = surahNumber > 0 ? surahNumber : 1;
   const displayVerseNumber = verseNumber > 0 ? verseNumber : 1;
+  
+  // Clean the translation text to remove any HTML tags or footnotes
+  const cleanedTranslation = cleanTranslationText(translation);
 
   const toggleBookmark = () => {
     setIsBookmarked(!isBookmarked);
@@ -60,7 +86,7 @@ export default function VerseCard({
           {arabicText.length > 100 ? arabicText.substring(0, 100) + '...' : arabicText}
         </div>
         <div className="text-app-text-secondary text-sm">
-          {translation.length > 120 ? translation.substring(0, 120) + '...' : translation}
+          {cleanedTranslation.length > 120 ? cleanedTranslation.substring(0, 120) + '...' : cleanedTranslation}
         </div>
       </div>
     );
@@ -107,7 +133,7 @@ export default function VerseCard({
       </div>
       
       <div className="px-4 py-6 text-lg text-app-text-secondary">
-        {translation}
+        {cleanedTranslation}
       </div>
     </div>
   );

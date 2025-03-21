@@ -150,7 +150,7 @@ export default function HadithChapterBrowser({
                     <BookOpen className="h-5 w-5 text-app-green" />
                   </div>
                   <div>
-                    <div className="text-white font-medium">{book.bookName}</div>
+                    <div className="text-white font-medium">Book {book.bookNumber}: {book.bookName}</div>
                     <div className="text-app-text-secondary text-sm">{book.hadithCount} hadith{book.hadithCount !== 1 ? 's' : ''}</div>
                   </div>
                 </div>
@@ -171,7 +171,7 @@ export default function HadithChapterBrowser({
                           onClick={() => handleHadithClick(hadith)}
                         >
                           <div>
-                            <div className="text-sm text-white">Hadith #{hadith.hadithNumber}</div>
+                            <div className="text-sm text-white">Hadith {hadith.hadithNumber}</div>
                             <div className="text-xs text-app-text-secondary truncate max-w-[250px]">
                               {hadith.english.substring(0, 60)}...
                             </div>

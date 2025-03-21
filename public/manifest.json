@@ -1,0 +1,112 @@
+{
+  "name": "Quranly - Quran and Hadith App",
+  "short_name": "Quranly",
+  "description": "Study and explore the Quran and authentic Hadith collections with offline support",
+  "categories": ["education", "books", "religious"],
+  "lang": "en-US",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#121826",
+  "background_color": "#121826",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-152x152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384x384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/homescreen.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "platform": "narrow",
+      "label": "Homescreen of Quranly"
+    },
+    {
+      "src": "/screenshots/quran-reading.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "platform": "narrow",
+      "label": "Quran Reading Interface"
+    },
+    {
+      "src": "/screenshots/hadith-collection.jpg",
+      "sizes": "1080x1920",
+      "type": "image/jpeg",
+      "platform": "narrow",
+      "label": "Hadith Collection View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quran Reading",
+      "short_name": "Quran",
+      "description": "Open Quran reading page",
+      "url": "/quran/reading",
+      "icons": [{ "src": "/icons/quran-icon.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Hadith Reading",
+      "short_name": "Hadith",
+      "description": "Open Hadith reading page",
+      "url": "/sunnah/reading",
+      "icons": [{ "src": "/icons/hadith-icon.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "scope": "/",
+  "dir": "ltr"
+} 

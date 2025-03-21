@@ -1,5 +1,5 @@
-
 import { Hadith } from './hadithTypes';
+import { COLLECTION_MAP } from './hadithDatabase';
 
 // Configuration for The9Books API
 interface The9BooksConfig {
@@ -67,17 +67,17 @@ export const the9BooksConfig: The9BooksConfig = {
 
 // Sample data for when the API is unavailable
 const sampleBooks = [
-  { id: "1", name: 'Book of Revelation', hadithCount: 8 },
-  { id: "2", name: 'Book of Faith', hadithCount: 63 },
-  { id: "3", name: 'Book of Knowledge', hadithCount: 42 },
-  { id: "4", name: 'Book of Ablution', hadithCount: 75 },
-  { id: "5", name: 'Book of Bath', hadithCount: 28 }
+  { id: "1", name: 'Book of Revelation', hadithCount: 7 },
+  { id: "2", name: 'Book of Faith', hadithCount: 51 },
+  { id: "3", name: 'Book of Knowledge', hadithCount: 76 },
+  { id: "4", name: 'Book of Ablution', hadithCount: 113 },
+  { id: "5", name: 'Book of Bath', hadithCount: 46 }
 ];
 
 // Sample hadiths for when the API is unavailable
 const sampleHadiths: Hadith[] = [
   {
-    id: 1,
+    id: "1",
     collection: 'bukhari',
     bookNumber: "1",
     chapterNumber: "1",
@@ -89,7 +89,7 @@ const sampleHadiths: Hadith[] = [
     narrator: 'Umar bin Al-Khattab'
   },
   {
-    id: 2,
+    id: "2",
     collection: 'bukhari',
     bookNumber: "1",
     chapterNumber: "1",
@@ -101,7 +101,7 @@ const sampleHadiths: Hadith[] = [
     narrator: 'Aisha'
   },
   {
-    id: 3,
+    id: "3",
     collection: 'bukhari',
     bookNumber: "1",
     chapterNumber: "1",
@@ -113,7 +113,7 @@ const sampleHadiths: Hadith[] = [
     narrator: 'Abdullah bin Abbas'
   },
   {
-    id: 4,
+    id: "4",
     collection: 'bukhari',
     bookNumber: "2",
     chapterNumber: "2",
@@ -125,7 +125,7 @@ const sampleHadiths: Hadith[] = [
     narrator: 'Abdullah'
   },
   {
-    id: 5,
+    id: "5",
     collection: 'bukhari',
     bookNumber: "2",
     chapterNumber: "2",
@@ -256,10 +256,16 @@ export const searchHadithsInThe9Books = async (
   query: string,
   collectionId?: string,
   page: number = 1,
-  limit: number = 50
+  limit: number = 100  // Increase default limit to get more comprehensive results
 ): Promise<Hadith[]> => {
+  if (!query.trim()) return [];
+  
   try {
-    let url = `${the9BooksConfig.baseUrl}/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`;
+    // Clean and prepare the query
+    const cleanQuery = query.trim();
+    
+    // First try exact search with the API
+    let url = `${the9BooksConfig.baseUrl}/search?q=${encodeURIComponent(cleanQuery)}&page=${page}&limit=${limit}`;
     
     if (collectionId) {
       url += `&collection=${collectionId}`;
@@ -268,10 +274,65 @@ export const searchHadithsInThe9Books = async (
     const response = await fetch(url);
     const data = await handleApiError(response);
     
-    return data.hadiths.map((hadith: any) => convertApiHadithToAppHadith(hadith));
+    let apiResults = data.hadiths.map((hadith: any) => convertApiHadithToAppHadith(hadith));
+    
+    // If we got fewer results than expected, try with keyword-based search
+    if (apiResults.length < 10 && cleanQuery.split(' ').length > 1) {
+      console.log('Few results with full query, trying keyword-based search');
+      
+      // Extract main keywords (words longer than 3 characters)
+      const keywords = cleanQuery.toLowerCase()
+        .split(/\s+|[.,;:!?()]/)
+        .filter(kw => kw.length > 3);
+      
+      // If we have meaningful keywords
+      if (keywords.length > 0) {
+        // Try searching with individual keywords
+        const keywordSearches = await Promise.all(
+          keywords.map(async keyword => {
+            try {
+              let keywordUrl = `${the9BooksConfig.baseUrl}/search?q=${encodeURIComponent(keyword)}&page=1&limit=${Math.floor(limit/2)}`;
+              if (collectionId) {
+                keywordUrl += `&collection=${collectionId}`;
+              }
+              
+              const keywordResponse = await fetch(keywordUrl);
+              const keywordData = await handleApiError(keywordResponse);
+              return keywordData.hadiths.map((hadith: any) => convertApiHadithToAppHadith(hadith));
+            } catch (error) {
+              console.error(`Error searching with keyword "${keyword}":`, error);
+              return [];
+            }
+          })
+        );
+        
+        // Combine results from individual keyword searches
+        const additionalResults = keywordSearches.flat();
+        
+        // Combine with original results, ensuring no duplicates
+        const combinedResults = [...apiResults];
+        
+        // Add unique results from keyword searches
+        for (const result of additionalResults) {
+          const isDuplicate = combinedResults.some(
+            existing => existing.hadithNumber === result.hadithNumber && 
+                        existing.collection === result.collection
+          );
+          
+          if (!isDuplicate) {
+            combinedResults.push(result);
+          }
+        }
+        
+        // Update the results
+        apiResults = combinedResults;
+      }
+    }
+    
+    return apiResults;
   } catch (error) {
     console.error(`Error searching hadiths for "${query}":`, error);
-    // Simple search in sample data
+    // Simple search in sample data as fallback
     const searchTerms = query.toLowerCase().split(' ');
     return sampleHadiths.filter(hadith => {
       const englishText = hadith.english.toLowerCase();
@@ -282,15 +343,20 @@ export const searchHadithsInThe9Books = async (
 
 // Convert The9Books API data format to our app's Hadith type
 export const convertApiHadithToAppHadith = (apiHadith: any): Hadith => {
+  const collectionId = apiHadith.collection_id || '';
+  const collectionName = COLLECTION_MAP[collectionId] || apiHadith.collection_name || '';
+  const bookNumber = String(apiHadith.book_number) || "0";
+  const hadithNumber = String(apiHadith.hadith_number) || "0";
+  
   return {
-    id: apiHadith.id || 0,
-    collection: apiHadith.collection_name || '',
-    bookNumber: String(apiHadith.book_number) || "0",
+    id: String(apiHadith.id || "0"),
+    collection: collectionId,
+    bookNumber: bookNumber,
     chapterNumber: String(apiHadith.chapter_number || apiHadith.book_number) || "0",
-    hadithNumber: String(apiHadith.hadith_number) || "0",
+    hadithNumber: hadithNumber,
     arabic: apiHadith.text?.arabic || '',
     english: apiHadith.text?.english || '',
-    reference: `${apiHadith.collection_name} ${apiHadith.book_number}:${apiHadith.hadith_number}`,
+    reference: `${collectionName} ${bookNumber}:${hadithNumber}`,
     grade: apiHadith.grade || '',
     narrator: apiHadith.narrator || ''
   };
