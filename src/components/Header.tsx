@@ -1,6 +1,7 @@
 import { ArrowLeft, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Auth } from "@/components/Auth";
 
 interface HeaderProps {
   showBack?: boolean;
@@ -33,12 +34,15 @@ export default function Header({
         <h1 className="text-xl font-medium text-white">Rushd</h1>
       </div>
       
-      <Link 
-        to="/settings" 
-        className="h-12 w-12 rounded-full flex items-center justify-center glass-card transition-all duration-300 hover:bg-white/10 active:scale-95"
-      >
-        <Settings className="h-5 w-5 text-white" />
-      </Link>
+      <div className="flex items-center space-x-2">
+        <Auth />
+        <Link 
+          to="/settings" 
+          className="h-12 w-12 rounded-full flex items-center justify-center glass-card transition-all duration-300 hover:bg-white/10 active:scale-95"
+        >
+          <Settings className="h-5 w-5 text-white" />
+        </Link>
+      </div>
     </header>
   );
 }

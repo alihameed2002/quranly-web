@@ -1,11 +1,12 @@
-
-import { BookOpen, Search, Settings, BookText, BookMarked } from "lucide-react";
+import { BookOpen, Search, Settings, BookText, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Navigation() {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { user } = useAuth();
   
   const quranNavItems = [
     {
@@ -98,24 +99,47 @@ export default function Navigation() {
           </div>
         </div>
         
-        <Link
-          to="/settings"
-          className={cn(
-            "flex flex-col items-center justify-center space-y-1 px-3",
-            currentPath === "/settings" ? "text-app-purple" : "text-app-text-secondary"
+        <div className="flex space-x-4">
+          <Link
+            to="/settings"
+            className={cn(
+              "flex flex-col items-center justify-center space-y-1 px-3",
+              currentPath === "/settings" ? "text-app-purple" : "text-app-text-secondary"
+            )}
+          >
+            <Settings className={cn(
+              "h-6 w-6 transition-all duration-300",
+              currentPath === "/settings" && "text-app-purple"
+            )} />
+            <span className={cn(
+              "text-xs transition-all duration-300",
+              currentPath === "/settings" ? "text-app-purple font-medium" : "text-app-text-secondary"
+            )}>
+              Settings
+            </span>
+          </Link>
+          
+          {user && (
+            <Link
+              to="/profile"
+              className={cn(
+                "flex flex-col items-center justify-center space-y-1 px-3",
+                currentPath === "/profile" ? "text-app-blue" : "text-app-text-secondary"
+              )}
+            >
+              <User className={cn(
+                "h-6 w-6 transition-all duration-300",
+                currentPath === "/profile" && "text-app-blue"
+              )} />
+              <span className={cn(
+                "text-xs transition-all duration-300",
+                currentPath === "/profile" ? "text-app-blue font-medium" : "text-app-text-secondary"
+              )}>
+                Profile
+              </span>
+            </Link>
           )}
-        >
-          <Settings className={cn(
-            "h-6 w-6 transition-all duration-300",
-            currentPath === "/settings" && "text-app-purple"
-          )} />
-          <span className={cn(
-            "text-xs transition-all duration-300",
-            currentPath === "/settings" ? "text-app-purple font-medium" : "text-app-text-secondary"
-          )}>
-            Settings
-          </span>
-        </Link>
+        </div>
       </div>
     </div>
   );

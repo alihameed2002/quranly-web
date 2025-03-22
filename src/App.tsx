@@ -11,11 +11,15 @@ import SunnahReading from "./pages/sunnah/Reading";
 import SunnahExplore from "./pages/sunnah/Explore";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import Profile from "./pages/Profile";
+import AuthCallback from "./pages/auth/Callback";
 import OfflineIndicator from "./components/OfflineIndicator";
 import OfflinePrefetcher from "./components/OfflinePrefetcher";
 import { register, unregister } from "./utils/serviceWorkerRegistration";
 import { toast } from "./components/ui/use-toast";
 import { Button } from "./components/ui/button";
+import { ThemeProvider } from "./hooks/use-theme";
+import { AuthProvider } from "./hooks/use-auth";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,22 +98,28 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <OfflineIndicator />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/quran/reading" element={<QuranReading />} />
-            <Route path="/quran/explore" element={<QuranExplore />} />
-            <Route path="/sunnah/reading" element={<SunnahReading />} />
-            <Route path="/sunnah/explore" element={<SunnahExplore />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineIndicator />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/quran/reading" element={<QuranReading />} />
+                <Route path="/quran/explore" element={<QuranExplore />} />
+                <Route path="/sunnah/reading" element={<SunnahReading />} />
+                <Route path="/sunnah/explore" element={<SunnahExplore />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
